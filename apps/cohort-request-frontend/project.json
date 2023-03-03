@@ -24,7 +24,8 @@
       "executor": "@nrwl/vite:dev-server",
       "defaultConfiguration": "development",
       "options": {
-        "buildTarget": "cohort-request-frontend:build"
+        "buildTarget": "cohort-request-frontend:build",
+        "proxyConfig": "apps/cohort-request-frontend/proxy.conf.json"
       },
       "configurations": {
         "development": {
