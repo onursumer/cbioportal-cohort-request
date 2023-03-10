@@ -1,0 +1,11 @@
+.studyInfoTooltip {
+  :global {
+    .tooltip-inner {
+      min-width: 400px;
+    }
+  }
+}
+
+.studyInfoPopover {
+  min-width: 420px;
+}

@@ -1,15 +1,13 @@
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import styles from './app.module.scss';
+import 'bootstrap/dist/css/bootstrap.css';
 
-import NxWelcome from './nx-welcome';
+import Home from "./home/Home";
 
 export function App() {
   return (
-    <>
-      <NxWelcome title="cohort-request-frontend" />
-
-      <div />
-    </>
+    <div className={styles.wrapper}>
+      <Home />
+    </div>
   );
 }
 
