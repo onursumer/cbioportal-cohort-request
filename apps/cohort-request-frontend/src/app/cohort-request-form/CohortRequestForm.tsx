@@ -1,7 +1,7 @@
-import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {faArrowDown, faInfoCircle} from "@fortawesome/free-solid-svg-icons";
-import {useState} from "react";
-import {Button, Form, OverlayTrigger, Popover} from "react-bootstrap";
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faArrowDown, faInfoCircle } from '@fortawesome/free-solid-svg-icons';
+import { useState } from 'react';
+import { Button, Form, OverlayTrigger, Popover } from 'react-bootstrap';
 
 import styles from './CohortRequestForm.module.scss';
 
@@ -27,15 +27,15 @@ function StudyIdInfo() {
   const popover = (
     <Popover id="popover-basic" className={styles.studyInfoPopover}>
       <Popover.Body>
-        You can retrieve the ID from the study URL.{' '}
-        For example{' '}
+        You can retrieve the ID from the study URL. For example{' '}
         <a
-          href={"https://www.cbioportal.org/study/summary?id=pptc_2019"}
+          href={'https://www.cbioportal.org/study/summary?id=pptc_2019'}
           target="_blank"
           rel="noopener noreferrer"
         >
           https://www.cbioportal.org/study/summary?id=pptc_2019
-        </a>, pptc_2019 is the study ID
+        </a>
+        , pptc_2019 is the study ID
       </Popover.Body>
     </Popover>
   );
@@ -51,17 +51,23 @@ function StudyIdInfo() {
   );
 }
 
-function SubsetInputForm(props: {subsetType: SubsetType}) {
+function SubsetInputForm(props: { subsetType: SubsetType }) {
   // TODO props.subsetType should change the input form,
   //  e.g: multiple text areas depending on the number of study ids?
   return (
     <>
       <Form.Group className="mb-3" controlId="subsetFormStudyId">
-        <Form.Label>Please enter the cBioPortal study ID you want to subset <StudyIdInfo /></Form.Label>
+        <Form.Label>
+          Please enter the cBioPortal study ID you want to subset{' '}
+          <StudyIdInfo />
+        </Form.Label>
         <Form.Control type="text" placeholder="Enter study ID" />
       </Form.Group>
       <Form.Group className="mb-3" controlId="subsetFormCaseId">
-        <Form.Label>Please enter the sample/patient IDs from the cBioPortal study you want to subset</Form.Label>
+        <Form.Label>
+          Please enter the sample/patient IDs from the cBioPortal study you want
+          to subset
+        </Form.Label>
         <Form.Control as="textarea" rows={10} />
       </Form.Group>
     </>
@@ -69,7 +75,9 @@ function SubsetInputForm(props: {subsetType: SubsetType}) {
 }
 
 export function CohortRequestForm(props: CohortRequestFormProps) {
-  const [subsetType, setSubsetType] = useState<SubsetType | undefined>(undefined);
+  const [subsetType, setSubsetType] = useState<SubsetType | undefined>(
+    undefined
+  );
 
   return (
     <Form>
@@ -82,7 +90,9 @@ export function CohortRequestForm(props: CohortRequestFormProps) {
         <Form.Control type="text" placeholder="Enter MSK ID" />
       </Form.Group>
       <Form.Group className="mb-3" controlId="mainFormSubsetSelector">
-        <Form.Label>Select the type of study <FontAwesomeIcon icon={faArrowDown} /></Form.Label>
+        <Form.Label>
+          Select the type of study <FontAwesomeIcon icon={faArrowDown} />
+        </Form.Label>
         <Form.Check
           label="Subset an existing cBioPortal study"
           name="subset"
@@ -98,9 +108,11 @@ export function CohortRequestForm(props: CohortRequestFormProps) {
           onChange={() => setSubsetType(SubsetType.MergedStudy)}
         />
       </Form.Group>
-      {subsetType && <SubsetInputForm subsetType={subsetType}/>}
+      {subsetType && <SubsetInputForm subsetType={subsetType} />}
       <Form.Group className="mb-3" controlId="mainFormUserId">
-        <Form.Label>Please enter the users who need access to the study</Form.Label>
+        <Form.Label>
+          Please enter the users who need access to the study
+        </Form.Label>
         <Form.Control type="text" placeholder="Enter users" />
       </Form.Group>
       <Button variant="primary" type="submit">
