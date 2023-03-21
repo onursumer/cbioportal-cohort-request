@@ -15,15 +15,15 @@ export function Home(props: HomeProps) {
         color: '#2c3e50',
       }}
     >
-      <Row className="mb-5">
-        <Col md={6} className="mx-auto d-flex flex-column align-items-center">
+      <Row className="mb-5 mx-5">
+        <Col className="mx-auto d-flex flex-column align-items-center">
           <span className={styles.homePageTitle}>
             cBioPortal Cohort Request
           </span>
         </Col>
       </Row>
-      <Row className="mb-5">
-        <Col md={6} className="mx-auto">
+      <Row className="mb-5 mx-5">
+        <Col className="mx-auto">
           <CohortRequestForm />
         </Col>
       </Row>

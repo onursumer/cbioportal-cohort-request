@@ -1,0 +1,12 @@
+// This is the style for <Tooltip /> alternative in <IconWithTooltip />
+.studyInfoTooltip {
+  :global {
+    .tooltip-inner {
+      min-width: 400px;
+    }
+  }
+}
+
+.studyInfoPopover {
+  min-width: 420px;
+}
