@@ -1,25 +1,31 @@
 import styles from './SubsetInputPanel.module.scss';
-import React, { useState } from 'react';
+import React, { Dispatch, SetStateAction } from 'react';
 import _ from 'lodash';
 import { Button, Col, Form, Row } from 'react-bootstrap';
+import {
+  CohortItem,
+  SubsetType,
+} from '@cbioportal-cohort-request/cohort-request-utils';
 import IconWithTooltip from '../icon-with-tooltip/IconWithTooltip';
 import { faInfoCircle } from '@fortawesome/free-solid-svg-icons';
-import CohortTable, { CohortItem } from '../cohort-table/CohortTable';
+import CohortTable from '../cohort-table/CohortTable';
 
-export enum SubsetType {
-  SingleStudy = 'SINGLE_STUDY',
-  MergedStudy = 'MERGED_STUDY',
-}
-
-interface SubsetInput {
+export interface SubsetInput {
   studyId: string;
   caseIds: string;
 }
 
-const EMPTY_SUBSET_INPUT: SubsetInput = {
+export const EMPTY_SUBSET_INPUT: SubsetInput = {
   studyId: '',
   caseIds: '',
 };
+
+export function parseSubsetInput(input: SubsetInput): CohortItem {
+  return {
+    studyId: input.studyId.trim(),
+    caseIds: _(input.caseIds.split(/\s+/)).compact().uniq().value(),
+  };
+}
 
 function StudyIdInfo() {
   const tooltip = (
@@ -47,11 +53,14 @@ function StudyIdInfo() {
 
 interface SubsetInputPanelProps {
   subsetType: SubsetType;
+  cohorts: { [studyId: string]: CohortItem };
+  setCohorts: Dispatch<SetStateAction<{ [studyId: string]: CohortItem }>>;
+  input: SubsetInput;
+  setInput: Dispatch<SetStateAction<SubsetInput>>;
 }
 
 function SubsetInputPanel(props: SubsetInputPanelProps) {
-  const [cohorts, setCohorts] = useState<{ [studyId: string]: CohortItem }>({});
-  const [input, setInput] = useState<SubsetInput>(EMPTY_SUBSET_INPUT);
+  const { cohorts, setCohorts, input, setInput } = { ...props };
 
   const handleStudyIdChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const target = e.currentTarget;
@@ -70,12 +79,7 @@ function SubsetInputPanel(props: SubsetInputPanelProps) {
   };
 
   const handleAddStudy = () => {
-    const cohort = input
-      ? {
-          studyId: input.studyId.trim(),
-          caseIds: _(input.caseIds.split(/\s+/)).compact().uniq().value(),
-        }
-      : undefined;
+    const cohort = input ? parseSubsetInput(input) : undefined;
 
     if (cohort && !_.isEmpty(cohort.studyId) && !_.isEmpty(cohort.caseIds)) {
       setCohorts({ ...cohorts, [cohort.studyId]: cohort });

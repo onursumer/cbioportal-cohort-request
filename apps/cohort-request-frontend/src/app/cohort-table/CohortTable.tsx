@@ -2,16 +2,12 @@ import styles from './CohortTable.module.scss';
 import IconWithTooltip from '../icon-with-tooltip/IconWithTooltip';
 import { faPen, faTrashCan } from '@fortawesome/free-solid-svg-icons';
 import React from 'react';
+import { CohortItem } from '@cbioportal-cohort-request/cohort-request-utils';
 
 export interface CohortTableProps {
   cohortItems: CohortItem[];
   onEdit: (studyId: string) => void;
   onRemove: (studyId: string) => void;
-}
-
-export interface CohortItem {
-  studyId: string;
-  caseIds: string[];
 }
 
 interface CohortTableRowProps {

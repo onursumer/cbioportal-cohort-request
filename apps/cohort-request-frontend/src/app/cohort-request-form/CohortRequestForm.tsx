@@ -1,15 +1,39 @@
+import _ from 'lodash';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowDown } from '@fortawesome/free-solid-svg-icons';
 import React, { useState } from 'react';
 import { Button, Form } from 'react-bootstrap';
-import SubsetInputPanel, {
+import {
+  CohortItem,
+  sendCohortRequest,
   SubsetType,
+} from '@cbioportal-cohort-request/cohort-request-utils';
+import SubsetInputPanel, {
+  EMPTY_SUBSET_INPUT,
+  parseSubsetInput,
+  SubsetInput,
 } from '../subset-input-panel/SubsetInputPanel';
 
 /* eslint-disable-next-line */
 export interface CohortRequestFormProps {}
 
+function generateCohortList(
+  subsetType: SubsetType | undefined,
+  cohorts: { [studyId: string]: CohortItem },
+  input: SubsetInput
+): CohortItem[] {
+  return subsetType !== SubsetType.MergedStudy || _.isEmpty(cohorts)
+    ? [parseSubsetInput(input)]
+    : Object.values(cohorts);
+}
+
 export function CohortRequestForm(props: CohortRequestFormProps) {
+  const [cohorts, setCohorts] = useState<{ [studyId: string]: CohortItem }>({});
+  const [subsetInput, setSubsetInput] =
+    useState<SubsetInput>(EMPTY_SUBSET_INPUT);
+  const [name, setName] = useState<string>('');
+  const [id, setId] = useState<string>('');
+  const [users, setUsers] = useState<string | undefined>(undefined);
   const [subsetType, setSubsetType] = useState<SubsetType | undefined>(
     undefined
   );
@@ -28,7 +52,13 @@ export function CohortRequestForm(props: CohortRequestFormProps) {
 
     if (isValid) {
       // all valid, ready to call the corresponding API
-      // TODO fire API call
+      sendCohortRequest({
+        name,
+        id,
+        type: subsetType || SubsetType.SingleStudy,
+        cohorts: generateCohortList(subsetType, cohorts, subsetInput),
+        users: _.uniq(users?.split(/\s+/)) || [],
+      }).then((response) => console.log(response)); // TODO display a user friendly message
     }
   };
 
@@ -36,14 +66,24 @@ export function CohortRequestForm(props: CohortRequestFormProps) {
     <Form noValidate={true} validated={validated} onSubmit={handleSubmit}>
       <Form.Group className="mb-3" controlId="mainFormName">
         <Form.Label>Name</Form.Label>
-        <Form.Control required={true} type="text" placeholder="Enter name" />
+        <Form.Control
+          required={true}
+          type="text"
+          placeholder="Enter name"
+          onChange={(e) => setName(e.currentTarget.value)}
+        />
         <Form.Control.Feedback type="invalid">
           Please enter your name.
         </Form.Control.Feedback>
       </Form.Group>
       <Form.Group className="mb-3" controlId="mainFormId">
         <Form.Label>MSK ID</Form.Label>
-        <Form.Control required={true} type="text" placeholder="Enter MSK ID" />
+        <Form.Control
+          required={true}
+          type="text"
+          placeholder="Enter MSK ID"
+          onChange={(e) => setId(e.currentTarget.value)}
+        />
         <Form.Control.Feedback type="invalid">
           Please enter your MSK ID.
         </Form.Control.Feedback>
@@ -69,12 +109,24 @@ export function CohortRequestForm(props: CohortRequestFormProps) {
           onChange={() => setSubsetType(SubsetType.MergedStudy)}
         />
       </Form.Group>
-      {subsetType && <SubsetInputPanel subsetType={subsetType} />}
+      {subsetType && (
+        <SubsetInputPanel
+          subsetType={subsetType}
+          cohorts={cohorts}
+          setCohorts={setCohorts}
+          input={subsetInput}
+          setInput={setSubsetInput}
+        />
+      )}
       <Form.Group className="mb-3" controlId="mainFormUserId">
         <Form.Label>
           Please enter the users who need access to the study
         </Form.Label>
-        <Form.Control type="text" placeholder="Enter users" />
+        <Form.Control
+          type="text"
+          placeholder="Enter users"
+          onChange={(e) => setUsers(e.currentTarget.value)}
+        />
       </Form.Group>
       <Button disabled={valid} variant="primary" type="submit">
         Submit
