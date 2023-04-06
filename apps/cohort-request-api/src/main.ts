@@ -1,5 +1,6 @@
 import express from 'express';
 import { CohortRequest } from '@cbioportal-cohort-request/cohort-request-utils';
+import { requestCohort } from './app/request-cohort';
 
 const API_ROOT = '/api';
 const host = process.env.HOST ?? 'localhost';
@@ -16,8 +17,7 @@ app.get(API_ROOT, (req, res) => {
 
 app.post(`${API_ROOT}/cohort-request`, (req, res) => {
   const cohortRequest: CohortRequest = req.body;
-  // TODO process cohortRequest and return a meaningful message
-  res.send({ message: cohortRequest });
+  requestCohort(cohortRequest).then((response) => res.send(response));
 });
 
 app.listen(port, host, () => {
