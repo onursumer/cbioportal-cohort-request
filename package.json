@@ -5,7 +5,11 @@
   "scripts": {
     "formatUncommitted": "STAGED_AND_CHANGED_FILES=$(git diff HEAD --name-only --cached --diff-filter=d) && nx format:write --files $STAGED_AND_CHANGED_FILES && git add -f $STAGED_AND_CHANGED_FILES",
     "backendDev": "nx serve cohort-request-api",
-    "frontendDev": "nx serve cohort-request-frontend"
+    "frontendDev": "nx serve cohort-request-frontend",
+    "serveAllDev": "nx run-many --targets=serve --projects=cohort-request-frontend,cohort-request-api",
+    "backendProd": "nx serve cohort-request-api --configuration=production",
+    "frontendProd": "nx serve cohort-request-frontend --configuration=production",
+    "serveAllProd": "nx run-many --targets=serve --projects=cohort-request-frontend,cohort-request-api --configuration=production"
   },
   "pre-commit": [
     "formatUncommitted"
