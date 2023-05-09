@@ -24,7 +24,6 @@
       },
       "configurations": {
         "production": {
-          "bundle": true,
           "esbuildOptions": {
             "sourcemap": false
           }

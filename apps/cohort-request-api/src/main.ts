@@ -5,8 +5,9 @@ import { requestCohort } from './app/request-cohort';
 const API_ROOT = '/api';
 const host = process.env.HOST ?? 'localhost';
 const port = process.env.PORT ? Number(process.env.PORT) : 3200;
-const pythonBinaryPath = process.env.PYTHON ?? '/usr/bin/python3';
-const pythonScriptPath = process.env.SCRIPT ?? '/tmp/python/scripts/test.py';
+const shellScriptPath =
+  process.env.SCRIPT ??
+  '/data/curation/internal_data_curation_automation/automate_curation.sh';
 
 const app = express();
 app.use(express.json());
@@ -19,8 +20,8 @@ app.get(API_ROOT, (req, res) => {
 
 app.post(`${API_ROOT}/cohort-request`, (req, res) => {
   const cohortRequest: CohortRequest = req.body;
-  requestCohort(cohortRequest, pythonBinaryPath, pythonScriptPath).then(
-    (response) => res.send(response)
+  requestCohort(cohortRequest, shellScriptPath).then((response) =>
+    res.send(response)
   );
 });
 

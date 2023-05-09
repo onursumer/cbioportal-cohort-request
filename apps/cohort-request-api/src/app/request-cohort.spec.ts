@@ -1,7 +1,7 @@
 import { requestCohort } from './request-cohort';
 
 describe('requestCohort', () => {
-  it('should work', () => {
-    // expect(requestCohort()).toEqual('requestCohort');
+  it('should request cohort', async () => {
+    // expect(requestCohort()).toEqual('');
   });
 });

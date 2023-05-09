@@ -16,6 +16,13 @@ export interface CohortRequest {
   users?: string[];
 }
 
+export enum CohortRequestStatus {
+  Pending = 'Pending',
+  Complete = 'Complete',
+  Error = 'Error',
+}
+
 export interface CohortRequestResponse {
+  status: CohortRequestStatus;
   message: string;
 }

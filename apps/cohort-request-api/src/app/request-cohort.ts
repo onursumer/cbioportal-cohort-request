@@ -1,30 +1,34 @@
 import {
+  executeCommand,
   CohortRequest,
   CohortRequestResponse,
 } from '@cbioportal-cohort-request/cohort-request-utils';
-import { Options, PythonShell } from 'python-shell';
+import _ from 'lodash';
+import { ShellString } from 'shelljs';
 
 export async function requestCohort(
   request: CohortRequest,
-  pythonBinaryPath: string,
-  pythonScriptPath: string
+  shellScriptPath: string
 ): Promise<CohortRequestResponse> {
-  const options = getPythonShellOptions(pythonBinaryPath, ['TODO']);
-  const result = await PythonShell.run(pythonScriptPath, options).catch(() => {
-    // TODO return a status code (enum?)
-    return 'ERROR';
-  });
+  const studies = request.cohorts.map((c) => c.studyId).join(',');
+  const caseIds = _.flatten(request.cohorts.map((c) => c.caseIds));
+  const subsetIdFilename = generateTempSubsetIdFilename(request);
+  ShellString(caseIds.join('\n')).to(subsetIdFilename);
+  // generate command to execute with params
+  const command = `${shellScriptPath} --subset-identifiers=${subsetIdFilename} --input-directories="${studies}"`;
+
+  // TODO implement a queued execution & check duplicate requests
+  const { status, output } = await executeCommand(command, shellScriptPath);
 
   return {
-    message: 'Success!',
+    status,
+    // TODO return user friendly message
+    message: output?.stderr || output?.stdout || '',
   };
 }
 
-function getPythonShellOptions(pythonPath: string, args: string[]): Options {
-  return {
-    mode: 'text',
-    pythonPath,
-    pythonOptions: ['-u'], // get print results in real-time
-    args,
-  };
+function generateTempSubsetIdFilename(request: CohortRequest) {
+  // TODO creating a system file using user input is not safe,
+  //  make sure request.id is strictly numeric
+  return `/tmp/subset_ids_${request.id}_${new Date().getTime()}.txt`;
 }
