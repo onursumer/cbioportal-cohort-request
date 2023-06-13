@@ -1,4 +1,4 @@
-import { CohortRequestStatus } from './cohort-request-model';
+import { CohortRequestStatus } from '@cbioportal-cohort-request/cohort-request-utils';
 import { executeCommand } from './execute-command';
 
 describe('executeCommand', () => {

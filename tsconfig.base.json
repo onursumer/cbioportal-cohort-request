@@ -15,6 +15,9 @@
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "paths": {
+      "@cbioportal-cohort-request/cohort-request-node-utils": [
+        "libs/cohort-request-node-utils/src/index.ts"
+      ],
       "@cbioportal-cohort-request/cohort-request-utils": [
         "libs/cohort-request-utils/src/index.ts"
       ]

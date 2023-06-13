@@ -1,4 +1,5 @@
 import express from 'express';
+import { CohortRequestQueue } from '@cbioportal-cohort-request/cohort-request-node-utils';
 import { CohortRequest } from '@cbioportal-cohort-request/cohort-request-utils';
 import { requestCohort } from './app/request-cohort';
 
@@ -8,6 +9,7 @@ const port = process.env.PORT ? Number(process.env.PORT) : 3200;
 const shellScriptPath =
   process.env.SCRIPT ??
   '/data/curation/internal_data_curation_automation/automate_curation.sh';
+const requestQueue = new CohortRequestQueue(shellScriptPath);
 
 const app = express();
 app.use(express.json());
@@ -20,7 +22,7 @@ app.get(API_ROOT, (req, res) => {
 
 app.post(`${API_ROOT}/cohort-request`, (req, res) => {
   const cohortRequest: CohortRequest = req.body;
-  requestCohort(cohortRequest, shellScriptPath).then((response) =>
+  requestCohort(cohortRequest, shellScriptPath, requestQueue).then((response) =>
     res.send(response)
   );
 });

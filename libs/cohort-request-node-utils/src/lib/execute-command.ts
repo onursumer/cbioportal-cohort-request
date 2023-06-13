@@ -1,4 +1,4 @@
-import { CohortRequestStatus } from './cohort-request-model';
+import { CohortRequestStatus } from '@cbioportal-cohort-request/cohort-request-utils';
 import { cd, exec, pwd } from 'shelljs';
 import * as path from 'path';
 
@@ -62,7 +62,10 @@ export async function executeCommand(
   return { status, output, execPromise };
 }
 
-function execAsync(command: string, options: any = {}): Promise<ExecOutput> {
+export function execAsync(
+  command: string,
+  options: any = {}
+): Promise<ExecOutput> {
   return new Promise(function (resolve, reject) {
     exec(command, options, (code, stdout, stderr) => {
       const result = { code, stdout, stderr };
@@ -72,6 +75,6 @@ function execAsync(command: string, options: any = {}): Promise<ExecOutput> {
   });
 }
 
-function delay(time) {
-  return new Promise((resolve) => setTimeout(resolve, time));
+export function delay(timeInMilliseconds: number) {
+  return new Promise((resolve) => setTimeout(resolve, timeInMilliseconds));
 }

@@ -1,5 +1,8 @@
 import {
+  CohortRequestQueue,
   executeCommand,
+} from '@cbioportal-cohort-request/cohort-request-node-utils';
+import {
   CohortRequest,
   CohortRequestResponse,
 } from '@cbioportal-cohort-request/cohort-request-utils';
@@ -8,17 +11,23 @@ import { ShellString } from 'shelljs';
 
 export async function requestCohort(
   request: CohortRequest,
-  shellScriptPath: string
+  shellScriptPath: string,
+  requestQueue?: CohortRequestQueue
 ): Promise<CohortRequestResponse> {
-  const studies = request.cohorts.map((c) => c.studyId).join(',');
-  const caseIds = _.flatten(request.cohorts.map((c) => c.caseIds));
+  const studies = request.cohorts
+    .map((c) => c.studyId)
+    .sort()
+    .join(',');
+  const caseIds = _.flatten(request.cohorts.map((c) => c.caseIds)).sort();
   const subsetIdFilename = generateTempSubsetIdFilename(request);
   ShellString(caseIds.join('\n')).to(subsetIdFilename);
   // generate command to execute with params
   const command = `${shellScriptPath} --subset-identifiers=${subsetIdFilename} --input-directories="${studies}"`;
 
-  // TODO implement a queued execution & check duplicate requests
-  const { status, output } = await executeCommand(command, shellScriptPath);
+  // use the queue if provided to execute the command
+  const { status, output } = requestQueue
+    ? await requestQueue.enqueue(command)
+    : await executeCommand(command, shellScriptPath);
 
   return {
     status,

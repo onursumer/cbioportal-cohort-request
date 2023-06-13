@@ -6,6 +6,7 @@
     "formatUncommitted": "STAGED_AND_CHANGED_FILES=$(git diff HEAD --name-only --cached --diff-filter=d) && nx format:write --files $STAGED_AND_CHANGED_FILES && git add -f $STAGED_AND_CHANGED_FILES",
     "backendDev": "nx serve cohort-request-api",
     "frontendDev": "nx serve cohort-request-frontend",
+    "testAll": "nx run-many --targets=test --all",
     "serveAllDev": "nx run-many --targets=serve --projects=cohort-request-frontend,cohort-request-api",
     "backendProd": "nx serve cohort-request-api --configuration=production",
     "frontendProd": "nx serve cohort-request-frontend --configuration=production",
@@ -75,7 +76,7 @@
     "ts-jest": "^29.0.5",
     "ts-node": "10.9.1",
     "typescript": "~4.9.5",
-    "vite": "^4.0.1",
+    "vite": "^4.0.5",
     "vite-plugin-eslint": "^1.8.1",
     "vite-tsconfig-paths": "^4.0.2",
     "vitest": "^0.25.8"

@@ -17,6 +17,7 @@ export interface CohortRequest {
 }
 
 export enum CohortRequestStatus {
+  Queued = 'Queued',
   Pending = 'Pending',
   Complete = 'Complete',
   Error = 'Error',
