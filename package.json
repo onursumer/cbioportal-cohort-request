@@ -7,6 +7,7 @@
     "backendDev": "nx serve cohort-request-api",
     "frontendDev": "nx serve cohort-request-frontend",
     "testAll": "nx run-many --targets=test --all",
+    "buildAll": "nx run-many --targets=build --all",
     "serveAllDev": "nx run-many --targets=serve --projects=cohort-request-frontend,cohort-request-api",
     "backendProd": "nx serve cohort-request-api --configuration=production",
     "frontendProd": "nx serve cohort-request-frontend --configuration=production",
