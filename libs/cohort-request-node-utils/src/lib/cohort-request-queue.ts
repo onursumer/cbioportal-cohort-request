@@ -1,12 +1,23 @@
-import { CohortRequestStatus } from '@cbioportal-cohort-request/cohort-request-utils';
-
+import {
+  CohortRequest,
+  CohortRequestStatus,
+} from '@cbioportal-cohort-request/cohort-request-utils';
+import {
+  defaultJobCompleteHandler,
+  defaultJobErrorHandler,
+  defaultRequestToCommand,
+  defaultRequestToUniqueId,
+  JobCompleteHandler,
+  JobErrorHandler,
+} from './cohort-request-process';
 import { ExecResult, executeCommand } from './execute-command';
 
 interface QueueItem {
   uniqueId: string;
   command: string;
+  request: CohortRequest;
   resolve: (value: ExecResult) => void;
-  reject: (reason: any) => void;
+  reject: (reason: ExecResult | string) => void;
 }
 
 enum DequeueResult {
@@ -25,16 +36,28 @@ export class CohortRequestQueue {
 
   constructor(
     private shellScriptPath: string,
-    private timeout: number | undefined = undefined
+    private timeout: number | undefined = undefined,
+    private onJobComplete: JobCompleteHandler = defaultJobCompleteHandler,
+    private onJobError: JobErrorHandler = defaultJobErrorHandler
   ) {
     this.items = [];
     this.workingOnPromise = false;
     this.itemStatus = {};
   }
 
-  public enqueue(command: string, hash?: string): Promise<Partial<ExecResult>> {
-    // check for duplicates
-    const uniqueId = hash || command;
+  public enqueue(
+    request: CohortRequest,
+    requestToCommand: (
+      request: CohortRequest,
+      shellScriptPath: string
+    ) => string = defaultRequestToCommand,
+    requestToUniqueId: (
+      request: CohortRequest,
+      delimiter?: string
+    ) => string = defaultRequestToUniqueId
+  ): Promise<Partial<ExecResult>> {
+    const command = requestToCommand(request, this.shellScriptPath);
+    const uniqueId = requestToUniqueId(request);
     const status = this.itemStatus[uniqueId];
     // do not enqueue duplicate queries, just return status if it is already Queued, Pending, or Complete
     if (
@@ -58,6 +81,7 @@ export class CohortRequestQueue {
       this.items.push({
         uniqueId,
         command,
+        request,
         resolve,
         reject,
       });
@@ -78,10 +102,13 @@ export class CohortRequestQueue {
     if (!item) {
       return DequeueResult.Empty;
     }
-    const onError = (err: any) => {
+    const onError = (err: ExecResult | string) => {
       this.workingOnPromise = false;
       this.itemStatus[item.uniqueId] = CohortRequestStatus.Error;
       item.reject(err);
+      if (this.onJobError) {
+        this.onJobError(item.request, this.itemStatus[item.uniqueId], err);
+      }
       this.dequeue();
     };
 
@@ -94,6 +121,13 @@ export class CohortRequestQueue {
             .then(() => {
               this.workingOnPromise = false;
               this.itemStatus[item.uniqueId] = CohortRequestStatus.Complete;
+              if (this.onJobComplete) {
+                this.onJobComplete(
+                  item.request,
+                  this.itemStatus[item.uniqueId],
+                  value
+                );
+              }
               this.dequeue();
             })
             .catch(onError);

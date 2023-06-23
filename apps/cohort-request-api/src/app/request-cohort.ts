@@ -1,13 +1,14 @@
 import {
   CohortRequestQueue,
+  defaultRequestToCommand,
   executeCommand,
+  generateTempSubsetIdFilename,
+  getCaseIdsSorted,
 } from '@cbioportal-cohort-request/cohort-request-node-utils';
 import {
   CohortRequest,
   CohortRequestResponse,
 } from '@cbioportal-cohort-request/cohort-request-utils';
-import crypto from 'crypto';
-import _ from 'lodash';
 import { ShellString } from 'shelljs';
 
 export async function requestCohort(
@@ -15,20 +16,14 @@ export async function requestCohort(
   shellScriptPath: string,
   requestQueue?: CohortRequestQueue
 ): Promise<CohortRequestResponse> {
-  const studies = request.cohorts
-    .map((c) => c.studyId)
-    .sort()
-    .join(',');
-  const caseIds = _.flatten(request.cohorts.map((c) => c.caseIds)).sort();
-  const subsetIdFilename = generateTempSubsetIdFilename(request);
-  ShellString(caseIds.join('\n')).to(subsetIdFilename);
-  // generate command to execute with params
-  const command = `${shellScriptPath} --subset-identifiers=${subsetIdFilename} --input-directories="${studies}"`;
-  const hash = createHash(`${studies}:${caseIds.join(',')}`);
+  writeCasesToTempFile(request);
   // use the queue if provided to execute the command
   const { status, output } = requestQueue
-    ? await requestQueue.enqueue(command, hash)
-    : await executeCommand(command, shellScriptPath);
+    ? await requestQueue.enqueue(request)
+    : await executeCommand(
+        defaultRequestToCommand(request, shellScriptPath),
+        shellScriptPath
+      );
 
   return {
     status,
@@ -37,12 +32,9 @@ export async function requestCohort(
   };
 }
 
-export function generateTempSubsetIdFilename(request: CohortRequest) {
-  // TODO creating a system file using user input is not safe,
-  //  make sure request.id is strictly numeric
-  return `/tmp/subset_ids_${request.id}_${new Date().getTime()}.txt`;
-}
+export function writeCasesToTempFile(request: CohortRequest) {
+  const caseIds = getCaseIdsSorted(request);
+  const subsetIdFilename = generateTempSubsetIdFilename(request);
 
-export function createHash(input: string) {
-  return crypto.createHash('md5').update(input).digest('hex');
+  ShellString(caseIds.join('\n')).to(subsetIdFilename);
 }
