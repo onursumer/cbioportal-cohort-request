@@ -1,29 +1,27 @@
 import styles from './SubsetInputPanel.module.scss';
 import React, { Dispatch, SetStateAction } from 'react';
-import _ from 'lodash';
-import { Button, Col, Form, Row } from 'react-bootstrap';
-import {
-  CohortItem,
-  SubsetType,
-} from '@cbioportal-cohort-request/cohort-request-utils';
+import { Col, Form, Row } from 'react-bootstrap';
 import IconWithTooltip from '../icon-with-tooltip/IconWithTooltip';
 import { faInfoCircle } from '@fortawesome/free-solid-svg-icons';
-import CohortTable from '../cohort-table/CohortTable';
+import { parseInput } from '@cbioportal-cohort-request/cohort-request-utils';
 
 export interface SubsetInput {
-  studyId: string;
+  studyIds: string;
   caseIds: string;
 }
 
 export const EMPTY_SUBSET_INPUT: SubsetInput = {
-  studyId: '',
+  studyIds: '',
   caseIds: '',
 };
 
-export function parseSubsetInput(input: SubsetInput): CohortItem {
+export function parseSubsetInput(input: SubsetInput): {
+  studyIds: string[];
+  caseIds: string[];
+} {
   return {
-    studyId: input.studyId.trim(),
-    caseIds: _(input.caseIds.split(/\s+/)).compact().uniq().value(),
+    studyIds: parseInput(input.studyIds),
+    caseIds: parseInput(input.caseIds),
   };
 }
 
@@ -52,21 +50,18 @@ function StudyIdInfo() {
 }
 
 interface SubsetInputPanelProps {
-  subsetType: SubsetType;
-  cohorts: { [studyId: string]: CohortItem };
-  setCohorts: Dispatch<SetStateAction<{ [studyId: string]: CohortItem }>>;
   input: SubsetInput;
   setInput: Dispatch<SetStateAction<SubsetInput>>;
 }
 
 function SubsetInputPanel(props: SubsetInputPanelProps) {
-  const { cohorts, setCohorts, input, setInput } = { ...props };
+  const { input, setInput } = { ...props };
 
   const handleStudyIdChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const target = e.currentTarget;
     setInput({
       ...input,
-      studyId: target.value,
+      studyIds: target.value,
     });
   };
 
@@ -78,51 +73,15 @@ function SubsetInputPanel(props: SubsetInputPanelProps) {
     });
   };
 
-  const handleAddStudy = () => {
-    const cohort = input ? parseSubsetInput(input) : undefined;
-
-    if (cohort && !_.isEmpty(cohort.studyId) && !_.isEmpty(cohort.caseIds)) {
-      setCohorts({ ...cohorts, [cohort.studyId]: cohort });
-      setInput(EMPTY_SUBSET_INPUT);
-    }
-  };
-
-  const onRemoveStudy = (studyId: string) => {
-    setCohorts(_.omit(cohorts, [studyId]));
-  };
-
-  const onEditStudy = (studyId: string) => {
-    if (cohorts[studyId]) {
-      setInput({
-        studyId,
-        caseIds: cohorts[studyId].caseIds.join('\n'),
-      });
-    }
-  };
-
-  const cohortItems = Object.values(cohorts);
-
   return (
     <Row className="mb-3">
-      <Col md={6}>
+      <Col>
         <SubsetInputForm
-          subsetType={props.subsetType}
-          onAddStudy={handleAddStudy}
-          cohorts={cohorts}
           input={input}
           onStudyIdChange={handleStudyIdChange}
           onCaseIdChange={handleCaseIdChange}
         />
       </Col>
-      {props.subsetType === SubsetType.MergedStudy && (
-        <Col md={6}>
-          <CohortTable
-            cohortItems={cohortItems}
-            onEdit={onEditStudy}
-            onRemove={onRemoveStudy}
-          />
-        </Col>
-      )}
     </Row>
   );
 }
@@ -139,14 +98,15 @@ function SubsetMainInput(props: SubsetMainInputProps) {
     <>
       <Form.Group className="mb-3" controlId="subsetFormStudyId">
         <Form.Label>
-          Please enter the cBioPortal study ID you want to subset{' '}
-          <StudyIdInfo />
+          Please enter the cBioPortal study ID(s) you want to subset. Enter
+          comma-separated study IDs if you would like to merge multiple
+          cBioPortal studies. <StudyIdInfo />
         </Form.Label>
         <Form.Control
           required={props.required}
           type="text"
-          placeholder="Enter study ID"
-          value={props.input?.studyId}
+          placeholder="Enter study ID(s)"
+          value={props.input?.studyIds}
           onChange={props.onStudyIdChange}
         />
         <Form.Control.Feedback type="invalid">
@@ -156,7 +116,8 @@ function SubsetMainInput(props: SubsetMainInputProps) {
       <Form.Group className="mb-3" controlId="subsetFormCaseId">
         <Form.Label>
           Please enter the sample/patient IDs from the cBioPortal study you want
-          to subset
+          to subset. You can enter sample/patient IDs from multiple cBioPortal
+          studies if you would like to merge them.
         </Form.Label>
         <Form.Control
           required={props.required}
@@ -174,9 +135,6 @@ function SubsetMainInput(props: SubsetMainInputProps) {
 }
 
 interface SubsetInputFormProps {
-  subsetType: SubsetType;
-  onAddStudy: () => void;
-  cohorts: { [studyId: string]: CohortItem };
   input?: SubsetInput;
   onStudyIdChange?: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
   onCaseIdChange?: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
@@ -184,24 +142,12 @@ interface SubsetInputFormProps {
 
 function SubsetInputForm(props: SubsetInputFormProps) {
   return (
-    <>
-      <SubsetMainInput
-        required={
-          props.subsetType === SubsetType.SingleStudy ||
-          _.isEmpty(props.cohorts)
-        }
-        input={props.input}
-        onStudyIdChange={props.onStudyIdChange}
-        onCaseIdChange={props.onCaseIdChange}
-      />
-      {props.subsetType === SubsetType.MergedStudy && (
-        <Button variant="primary" type="button" onClick={props.onAddStudy}>
-          {props.input && props.cohorts[props.input.studyId]
-            ? `Update Study`
-            : `Add Study`}
-        </Button>
-      )}
-    </>
+    <SubsetMainInput
+      required={true}
+      input={props.input}
+      onStudyIdChange={props.onStudyIdChange}
+      onCaseIdChange={props.onCaseIdChange}
+    />
   );
 }
 

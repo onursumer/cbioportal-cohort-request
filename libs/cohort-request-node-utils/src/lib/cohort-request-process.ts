@@ -1,5 +1,4 @@
 import * as crypto from 'crypto';
-import * as _ from 'lodash';
 import {
   CohortRequest,
   CohortRequestStatus,
@@ -36,14 +35,11 @@ export function defaultJobErrorHandler(
 }
 
 export function combineStudyIdsSorted(request: CohortRequest, delimiter = ',') {
-  return request.cohorts
-    .map((c) => c.studyId)
-    .sort()
-    .join(delimiter);
+  return request.studyIds.slice().sort().join(delimiter);
 }
 
 export function getCaseIdsSorted(request: CohortRequest) {
-  return _.flatten(request.cohorts.map((c) => c.caseIds)).sort();
+  return request.caseIds.slice().sort();
 }
 
 export function generateTempSubsetIdFilename(request: CohortRequest) {

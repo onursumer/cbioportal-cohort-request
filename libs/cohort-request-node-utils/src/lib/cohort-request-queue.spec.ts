@@ -1,15 +1,12 @@
-import {
-  CohortRequestStatus,
-  SubsetType,
-} from '@cbioportal-cohort-request/cohort-request-utils';
+import { CohortRequestStatus } from '@cbioportal-cohort-request/cohort-request-utils';
 import { CohortRequestQueue } from './cohort-request-queue';
 import { delay } from './execute-command';
 
 const REQUEST_PLACEHOLDER = {
   name: 'unknown',
   id: '0',
-  type: SubsetType.SingleStudy,
-  cohorts: [],
+  studyIds: [],
+  caseIds: [],
   users: [],
 };
 

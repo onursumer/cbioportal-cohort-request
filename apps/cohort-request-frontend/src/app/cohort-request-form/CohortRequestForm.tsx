@@ -1,13 +1,9 @@
-import _ from 'lodash';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowDown } from '@fortawesome/free-solid-svg-icons';
 import React, { useState } from 'react';
 import { Button, Form, Modal } from 'react-bootstrap';
 import { PacmanLoader } from 'react-spinners';
 import {
-  CohortItem,
+  parseInput,
   sendCohortRequest,
-  SubsetType,
 } from '@cbioportal-cohort-request/cohort-request-utils';
 import SubsetInputPanel, {
   EMPTY_SUBSET_INPUT,
@@ -18,16 +14,6 @@ import styles from './CohortRequestForm.module.scss';
 
 /* eslint-disable-next-line */
 export interface CohortRequestFormProps {}
-
-function generateCohortList(
-  subsetType: SubsetType | undefined,
-  cohorts: { [studyId: string]: CohortItem },
-  input: SubsetInput
-): CohortItem[] {
-  return subsetType !== SubsetType.MergedStudy || _.isEmpty(cohorts)
-    ? [parseSubsetInput(input)]
-    : Object.values(cohorts);
-}
 
 export enum RequestStatus {
   Idle = 'IDLE',
@@ -78,15 +64,11 @@ function Loader(props: { status: RequestStatus }) {
 }
 
 export function CohortRequestForm(props: CohortRequestFormProps) {
-  const [cohorts, setCohorts] = useState<{ [studyId: string]: CohortItem }>({});
   const [subsetInput, setSubsetInput] =
     useState<SubsetInput>(EMPTY_SUBSET_INPUT);
   const [name, setName] = useState<string>('');
   const [id, setId] = useState<string>('');
   const [users, setUsers] = useState<string | undefined>(undefined);
-  const [subsetType, setSubsetType] = useState<SubsetType | undefined>(
-    undefined
-  );
   const [validated, setValidated] = useState(false);
   const [valid, setValid] = useState(false);
   const [status, setStatus] = useState<RequestStatus>(RequestStatus.Idle);
@@ -103,13 +85,14 @@ export function CohortRequestForm(props: CohortRequestFormProps) {
 
     if (isValid) {
       setStatus(RequestStatus.Pending);
+      const parsedInput = parseSubsetInput(subsetInput);
       // all valid, ready to call the corresponding API
       sendCohortRequest({
         name,
         id,
-        type: subsetType || SubsetType.SingleStudy,
-        cohorts: generateCohortList(subsetType, cohorts, subsetInput),
-        users: _.uniq(users?.split(/\s+/)) || [],
+        studyIds: parsedInput.studyIds,
+        caseIds: parsedInput.caseIds,
+        users: parseInput(users) || [],
       })
         .then((response) => {
           // TODO set response?
@@ -153,36 +136,7 @@ export function CohortRequestForm(props: CohortRequestFormProps) {
             Please enter your MSK ID.
           </Form.Control.Feedback>
         </Form.Group>
-        <Form.Group className="mb-3" controlId="mainFormSubsetSelector">
-          <Form.Label>
-            Select the type of study <FontAwesomeIcon icon={faArrowDown} />
-          </Form.Label>
-          <Form.Check
-            required={true}
-            label="Subset an existing cBioPortal study"
-            name="subset"
-            type="radio"
-            id="singleStudyRadio"
-            onChange={() => setSubsetType(SubsetType.SingleStudy)}
-          />
-          <Form.Check
-            required={true}
-            label="Subset and/or merge existing cBioPortal studies"
-            name="subset"
-            type="radio"
-            id="mergedStudyRadio"
-            onChange={() => setSubsetType(SubsetType.MergedStudy)}
-          />
-        </Form.Group>
-        {subsetType && (
-          <SubsetInputPanel
-            subsetType={subsetType}
-            cohorts={cohorts}
-            setCohorts={setCohorts}
-            input={subsetInput}
-            setInput={setSubsetInput}
-          />
-        )}
+        <SubsetInputPanel input={subsetInput} setInput={setSubsetInput} />
         <Form.Group className="mb-3" controlId="mainFormUserId">
           <Form.Label>
             Please enter the users who need access to the study
