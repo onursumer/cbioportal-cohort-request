@@ -17,6 +17,7 @@ export async function requestCohort(
   requestQueue?: CohortRequestQueue
 ): Promise<CohortRequestResponse> {
   writeCasesToTempFile(request);
+  // TODO process or save request.additionalData
   // use the queue if provided to execute the command
   const { status, output } = requestQueue
     ? await requestQueue.enqueue(request)

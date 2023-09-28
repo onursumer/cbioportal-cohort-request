@@ -12,7 +12,8 @@ const shellScriptPath =
 const requestQueue = new CohortRequestQueue(shellScriptPath);
 
 const app = express();
-app.use(express.json());
+// TODO hardcoded json limit, replace with a constant or make it customizable
+app.use(express.json({ limit: '100mb' }));
 
 app.get(API_ROOT, (req, res) => {
   res.send({

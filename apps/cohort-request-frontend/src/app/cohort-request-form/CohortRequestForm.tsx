@@ -11,6 +11,10 @@ import SubsetInputPanel, {
   SubsetInput,
 } from '../subset-input-panel/SubsetInputPanel';
 import styles from './CohortRequestForm.module.scss';
+import {
+  FileInputPanel,
+  getDataFromFiles,
+} from '../file-input-panel/FileInputPanel';
 
 /* eslint-disable-next-line */
 export interface CohortRequestFormProps {}
@@ -72,8 +76,9 @@ export function CohortRequestForm(props: CohortRequestFormProps) {
   const [validated, setValidated] = useState(false);
   const [valid, setValid] = useState(false);
   const [status, setStatus] = useState<RequestStatus>(RequestStatus.Idle);
+  const [fileList, setFileList] = useState<FileList | undefined>(undefined);
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     // do not trigger an actual form submit event
     e.preventDefault();
     e.stopPropagation();
@@ -93,6 +98,7 @@ export function CohortRequestForm(props: CohortRequestFormProps) {
         studyIds: parsedInput.studyIds,
         caseIds: parsedInput.caseIds,
         users: parseInput(users) || [],
+        additionalData: await getDataFromFiles(fileList),
       })
         .then((response) => {
           // TODO set response?
@@ -147,6 +153,7 @@ export function CohortRequestForm(props: CohortRequestFormProps) {
             onChange={(e) => setUsers(e.currentTarget.value)}
           />
         </Form.Group>
+        <FileInputPanel setFileList={setFileList} />
         <Button
           disabled={status !== RequestStatus.Idle}
           variant="primary"

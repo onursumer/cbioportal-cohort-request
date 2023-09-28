@@ -4,6 +4,10 @@ export interface CohortRequest {
   studyIds: string[];
   caseIds: string[];
   users?: string[];
+  additionalData?: {
+    content: string;
+    filename: string;
+  }[];
 }
 
 export enum CohortRequestStatus {

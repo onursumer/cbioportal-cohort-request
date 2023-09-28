@@ -16,13 +16,29 @@ export type JobErrorHandler = (
   error: ExecResult | string
 ) => void;
 
+function getRequestSummary(request: CohortRequest) {
+  return {
+    ...request,
+    additionalData: request.additionalData.map((d) => ({
+      filename: d.filename,
+      length: d.content.length,
+    })),
+  };
+}
+
 export function defaultJobCompleteHandler(
   request: CohortRequest,
   status: CohortRequestStatus,
   result: ExecResult
 ) {
   // TODO send an email/notification to subscribers
-  console.log(JSON.stringify({ request, status, result }));
+  console.log(
+    JSON.stringify(
+      { request: getRequestSummary(request), status, result },
+      null,
+      2
+    )
+  );
 }
 
 export function defaultJobErrorHandler(
@@ -31,7 +47,13 @@ export function defaultJobErrorHandler(
   error: ExecResult | string
 ) {
   // TODO send an email/notification to subscribers
-  console.log(JSON.stringify({ request, status, error }));
+  console.log(
+    JSON.stringify(
+      { request: getRequestSummary(request), status, error },
+      null,
+      2
+    )
+  );
 }
 
 export function combineStudyIdsSorted(request: CohortRequest, delimiter = ',') {
