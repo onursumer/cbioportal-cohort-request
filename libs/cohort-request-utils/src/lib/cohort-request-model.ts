@@ -18,6 +18,8 @@ export enum CohortRequestStatus {
 }
 
 export interface CohortRequestResponse {
+  uniqueId: string;
+  date: Date;
   status: CohortRequestStatus;
   message: string;
 }

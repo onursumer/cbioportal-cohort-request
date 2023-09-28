@@ -12,8 +12,9 @@ import {
 } from './cohort-request-process';
 import { ExecResult, executeCommand } from './execute-command';
 
-interface QueueItem {
+export interface QueueItem {
   uniqueId: string;
+  date: Date;
   command: string;
   request: CohortRequest;
   resolve: (value: ExecResult) => void;
@@ -55,30 +56,36 @@ export class CohortRequestQueue {
       request: CohortRequest,
       delimiter?: string
     ) => string = defaultRequestToUniqueId
-  ): Promise<Partial<ExecResult>> {
+  ): Promise<ExecResult> {
     const command = requestToCommand(request, this.shellScriptPath);
     const uniqueId = requestToUniqueId(request);
     const status = this.itemStatus[uniqueId];
+    const date = new Date();
     // do not enqueue duplicate queries, just return status if it is already Queued, Pending, or Complete
     if (
       status === CohortRequestStatus.Queued ||
       status === CohortRequestStatus.Pending ||
       status === CohortRequestStatus.Complete
     ) {
+      // add an output to indicate this is a duplicate request
+      const output = {
+        code: 0,
+        stderr: '',
+        stdout:
+          'Duplicate Request. This cohort and case id combination has been requested before.',
+      };
       return Promise.resolve({
+        uniqueId,
+        date,
         status,
-        // add an output to indicate this is a duplicate request
-        output: {
-          code: 0,
-          stderr: '',
-          stdout:
-            'Duplicate Request. This cohort and case id combination has been requested before.',
-        },
+        output,
+        execPromise: Promise.resolve(output),
       });
     }
 
-    return new Promise<Partial<ExecResult>>((resolve, reject) => {
+    return new Promise<ExecResult>((resolve, reject) => {
       this.items.push({
+        date,
         uniqueId,
         command,
         request,
@@ -87,8 +94,18 @@ export class CohortRequestQueue {
       });
       if (this.dequeue() === DequeueResult.Pending) {
         this.itemStatus[uniqueId] = CohortRequestStatus.Queued;
+        // add an output to indicate the request has been queued
+        const output = {
+          code: 0,
+          stderr: '',
+          stdout: 'Request has been queued.',
+        };
         resolve({
+          date,
+          uniqueId,
           status: CohortRequestStatus.Queued,
+          output,
+          execPromise: Promise.resolve(output),
         });
       }
     });
@@ -107,7 +124,7 @@ export class CohortRequestQueue {
       this.itemStatus[item.uniqueId] = CohortRequestStatus.Error;
       item.reject(err);
       if (this.onJobError) {
-        this.onJobError(item.request, this.itemStatus[item.uniqueId], err);
+        this.onJobError(item, this.itemStatus[item.uniqueId], err);
       }
       this.dequeue();
     };
@@ -115,18 +132,20 @@ export class CohortRequestQueue {
     try {
       this.workingOnPromise = true;
       this.itemStatus[item.uniqueId] = CohortRequestStatus.Pending;
-      executeCommand(item.command, this.shellScriptPath, this.timeout)
+      executeCommand(
+        item.command,
+        this.shellScriptPath,
+        item.uniqueId,
+        item.date,
+        this.timeout
+      )
         .then((value) => {
           value.execPromise
             .then(() => {
               this.workingOnPromise = false;
               this.itemStatus[item.uniqueId] = CohortRequestStatus.Complete;
               if (this.onJobComplete) {
-                this.onJobComplete(
-                  item.request,
-                  this.itemStatus[item.uniqueId],
-                  value
-                );
+                this.onJobComplete(item, this.itemStatus[item.uniqueId], value);
               }
               this.dequeue();
             })

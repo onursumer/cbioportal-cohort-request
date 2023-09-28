@@ -11,6 +11,8 @@ export interface ExecOutput {
 }
 
 export interface ExecResult {
+  uniqueId: string;
+  date: Date;
   status: CohortRequestStatus;
   execPromise: Promise<ExecOutput>;
   output?: ExecOutput;
@@ -23,11 +25,15 @@ export interface ExecResult {
  *
  * @param command command to execute
  * @param shellScriptPath path to the external script
+ * @param date optional execution date
+ * @param uniqueId optional unique id for execution
  * @param timeout waits up to <timeout> ms before returning Pending status
  */
 export async function executeCommand(
   command: string,
   shellScriptPath: string,
+  uniqueId?: string,
+  date: Date = new Date(),
   timeout: number = SYNC_EXECUTION_THRESHOLD_MS
 ): Promise<ExecResult> {
   let status = CohortRequestStatus.Pending;
@@ -59,7 +65,7 @@ export async function executeCommand(
     () => (status = CohortRequestStatus.Error)
   );
 
-  return { status, output, execPromise };
+  return { status, uniqueId, date, output, execPromise };
 }
 
 export function execAsync(

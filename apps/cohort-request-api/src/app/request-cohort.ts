@@ -1,6 +1,7 @@
 import {
   CohortRequestQueue,
   defaultRequestToCommand,
+  defaultRequestToUniqueId,
   executeCommand,
   generateTempSubsetIdFilename,
   getCaseIdsSorted,
@@ -17,17 +18,20 @@ export async function requestCohort(
   requestQueue?: CohortRequestQueue
 ): Promise<CohortRequestResponse> {
   writeCasesToTempFile(request);
-  // TODO process or save request.additionalData
+  // TODO process and/or save request.additionalData
   // use the queue if provided to execute the command
-  const { status, output } = requestQueue
+  const { status, output, uniqueId, date } = requestQueue
     ? await requestQueue.enqueue(request)
     : await executeCommand(
         defaultRequestToCommand(request, shellScriptPath),
-        shellScriptPath
+        shellScriptPath,
+        defaultRequestToUniqueId(request)
       );
 
   return {
     status,
+    uniqueId,
+    date,
     // TODO return user friendly message
     message: output?.stderr || output?.stdout || '',
   };

@@ -6,6 +6,8 @@ describe('executeCommand', () => {
     const { status, output } = await executeCommand(
       "echo 'executeCommand(): Hello World!'",
       '.',
+      '1',
+      new Date(),
       500
     );
 
@@ -18,6 +20,8 @@ describe('executeCommand', () => {
     const { status, output, execPromise } = await executeCommand(
       "sleep 1; echo 'executeCommand(): Goodbye World!';",
       '.',
+      '2',
+      new Date(),
       500
     );
 

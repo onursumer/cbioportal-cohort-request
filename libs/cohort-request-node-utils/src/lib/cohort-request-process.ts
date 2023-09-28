@@ -4,14 +4,15 @@ import {
   CohortRequestStatus,
 } from '@cbioportal-cohort-request/cohort-request-utils';
 import { ExecResult } from './execute-command';
+import { QueueItem } from './cohort-request-queue';
 
 export type JobCompleteHandler = (
-  request: CohortRequest,
+  item: QueueItem,
   status: CohortRequestStatus,
   result: ExecResult
 ) => void;
 export type JobErrorHandler = (
-  request: CohortRequest,
+  item: QueueItem,
   status: CohortRequestStatus,
   error: ExecResult | string
 ) => void;
@@ -26,34 +27,37 @@ function getRequestSummary(request: CohortRequest) {
   };
 }
 
+function getJobSummary(
+  item: QueueItem,
+  status: CohortRequestStatus,
+  result: ExecResult | string
+) {
+  return {
+    request: getRequestSummary(item.request),
+    uniqueId: item.uniqueId,
+    date: item.date,
+    command: item.command,
+    status,
+    result,
+  };
+}
+
 export function defaultJobCompleteHandler(
-  request: CohortRequest,
+  item: QueueItem,
   status: CohortRequestStatus,
   result: ExecResult
 ) {
   // TODO send an email/notification to subscribers
-  console.log(
-    JSON.stringify(
-      { request: getRequestSummary(request), status, result },
-      null,
-      2
-    )
-  );
+  console.log(JSON.stringify(getJobSummary(item, status, result), null, 2));
 }
 
 export function defaultJobErrorHandler(
-  request: CohortRequest,
+  item: QueueItem,
   status: CohortRequestStatus,
   error: ExecResult | string
 ) {
   // TODO send an email/notification to subscribers
-  console.log(
-    JSON.stringify(
-      { request: getRequestSummary(request), status, error },
-      null,
-      2
-    )
-  );
+  console.log(JSON.stringify(getJobSummary(item, status, error), null, 2));
 }
 
 export function combineStudyIdsSorted(request: CohortRequest, delimiter = ',') {
@@ -86,7 +90,7 @@ export function createHash(input: string) {
 
 export function defaultRequestToUniqueId(
   request: CohortRequest,
-  delimiter: ','
+  delimiter = ','
 ) {
   const studies = combineStudyIdsSorted(request, delimiter);
   const caseIds = getCaseIdsSorted(request);
