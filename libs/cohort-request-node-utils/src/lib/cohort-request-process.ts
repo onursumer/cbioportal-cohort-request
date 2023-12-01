@@ -1,64 +1,6 @@
 import * as crypto from 'crypto';
-import {
-  CohortRequest,
-  CohortRequestStatus,
-} from '@cbioportal-cohort-request/cohort-request-utils';
-import { ExecResult } from './execute-command';
-import { QueueItem } from './cohort-request-queue';
-
-export type JobCompleteHandler = (
-  item: QueueItem,
-  status: CohortRequestStatus,
-  result: ExecResult
-) => void;
-export type JobErrorHandler = (
-  item: QueueItem,
-  status: CohortRequestStatus,
-  error: ExecResult | string
-) => void;
-
-function getRequestSummary(request: CohortRequest) {
-  return {
-    ...request,
-    additionalData: request.additionalData.map((d) => ({
-      filename: d.filename,
-      length: d.content.length,
-    })),
-  };
-}
-
-function getJobSummary(
-  item: QueueItem,
-  status: CohortRequestStatus,
-  result: ExecResult | string
-) {
-  return {
-    request: getRequestSummary(item.request),
-    uniqueId: item.uniqueId,
-    date: item.date,
-    command: item.command,
-    status,
-    result,
-  };
-}
-
-export function defaultJobCompleteHandler(
-  item: QueueItem,
-  status: CohortRequestStatus,
-  result: ExecResult
-) {
-  // TODO send an email/notification to subscribers
-  console.log(JSON.stringify(getJobSummary(item, status, result), null, 2));
-}
-
-export function defaultJobErrorHandler(
-  item: QueueItem,
-  status: CohortRequestStatus,
-  error: ExecResult | string
-) {
-  // TODO send an email/notification to subscribers
-  console.log(JSON.stringify(getJobSummary(item, status, error), null, 2));
-}
+import { existsSync, mkdirSync, writeFileSync } from 'fs';
+import { CohortRequest } from '@cbioportal-cohort-request/cohort-request-utils';
 
 export function combineStudyIdsSorted(request: CohortRequest, delimiter = ',') {
   return request.studyIds.slice().sort().join(delimiter);
@@ -96,4 +38,22 @@ export function defaultRequestToUniqueId(
   const caseIds = getCaseIdsSorted(request);
 
   return createHash(`${studies}:${caseIds.join(delimiter)}`);
+}
+
+export function persistFiles(
+  files: { content: string; filename: string }[] = [],
+  persistencePath: string,
+  jobId: string
+) {
+  // create destination directory
+  const destDir = `${persistencePath}/${jobId}`;
+  mkdirSync(destDir, { recursive: true });
+
+  // write files if dest dir exists
+  if (existsSync(destDir)) {
+    files.forEach((f) => {
+      const destFile = `${destDir}/${f.filename}`;
+      writeFileSync(destFile, f.content);
+    });
+  }
 }

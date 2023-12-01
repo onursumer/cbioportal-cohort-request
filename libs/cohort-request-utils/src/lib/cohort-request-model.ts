@@ -15,6 +15,7 @@ export enum CohortRequestStatus {
   Pending = 'Pending',
   Complete = 'Complete',
   Error = 'Error',
+  Duplicate = 'Duplicate',
 }
 
 export interface CohortRequestResponse {
@@ -22,4 +23,40 @@ export interface CohortRequestResponse {
   date: Date;
   status: CohortRequestStatus;
   message: string;
+}
+
+export interface Job {
+  jobId: string;
+  requestDate: Date;
+  requesterId: string;
+  requesterName: string;
+  studyIds: string[];
+  caseIds: string[];
+  users?: string[];
+  additionalData?: {
+    filename: string;
+    size: number;
+  }[];
+}
+
+export interface Event {
+  jobId: string;
+  eventDate: Date;
+  status: CohortRequestStatus;
+  requesterId?: string;
+  requesterName?: string;
+  users?: string[];
+  additionalData?: {
+    filename: string;
+    size: number;
+  }[];
+}
+
+export interface QueueItem<T> {
+  uniqueId: string;
+  date: Date;
+  command: string;
+  request: CohortRequest;
+  resolve: (value: T) => void;
+  reject: (reason: T | string) => void;
 }

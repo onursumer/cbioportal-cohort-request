@@ -22,6 +22,8 @@ describe('CohortRequestQueue', () => {
   it('should execute commands sequentially', async () => {
     const queue = new CohortRequestQueue(
       '.',
+      '.',
+      undefined,
       200,
       () => undefined,
       () => undefined

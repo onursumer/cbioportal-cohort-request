@@ -1,25 +1,20 @@
 import {
   CohortRequest,
   CohortRequestStatus,
+  QueueItem,
 } from '@cbioportal-cohort-request/cohort-request-utils';
 import {
-  defaultJobCompleteHandler,
-  defaultJobErrorHandler,
   defaultRequestToCommand,
   defaultRequestToUniqueId,
+} from './cohort-request-process';
+import {
+  CohortRequestTracker,
+  defaultJobCompleteHandler,
+  defaultJobErrorHandler,
   JobCompleteHandler,
   JobErrorHandler,
-} from './cohort-request-process';
+} from './cohort-request-tracker';
 import { ExecResult, executeCommand } from './execute-command';
-
-export interface QueueItem {
-  uniqueId: string;
-  date: Date;
-  command: string;
-  request: CohortRequest;
-  resolve: (value: ExecResult) => void;
-  reject: (reason: ExecResult | string) => void;
-}
 
 enum DequeueResult {
   Pending = 'Pending',
@@ -28,22 +23,19 @@ enum DequeueResult {
 }
 
 export class CohortRequestQueue {
-  // TODO this variable keeps track of every single request active or completed
-  //  over time this may consume substantial amount of memory
-  itemStatus: { [uniqueId: string]: CohortRequestStatus };
-
-  items: QueueItem[];
+  items: QueueItem<ExecResult>[];
   workingOnPromise: boolean;
 
   constructor(
     private shellScriptPath: string,
+    private userDataPath: string,
+    private requestTracker: CohortRequestTracker = new CohortRequestTracker(),
     private timeout: number | undefined = undefined,
     private onJobComplete: JobCompleteHandler = defaultJobCompleteHandler,
     private onJobError: JobErrorHandler = defaultJobErrorHandler
   ) {
     this.items = [];
     this.workingOnPromise = false;
-    this.itemStatus = {};
   }
 
   public enqueue(
@@ -59,14 +51,25 @@ export class CohortRequestQueue {
   ): Promise<ExecResult> {
     const command = requestToCommand(request, this.shellScriptPath);
     const uniqueId = requestToUniqueId(request);
-    const status = this.itemStatus[uniqueId];
+    const status = this.getItemStatus(uniqueId);
     const date = new Date();
+
+    const item: QueueItem<ExecResult> = {
+      date,
+      uniqueId,
+      command,
+      request,
+      resolve: () => undefined,
+      reject: () => undefined,
+    };
+
     // do not enqueue duplicate queries, just return status if it is already Queued, Pending, or Complete
     if (
       status === CohortRequestStatus.Queued ||
       status === CohortRequestStatus.Pending ||
       status === CohortRequestStatus.Complete
     ) {
+      this.requestTracker.updateJobStatus(item, CohortRequestStatus.Duplicate);
       // add an output to indicate this is a duplicate request
       const output = {
         code: 0,
@@ -84,16 +87,11 @@ export class CohortRequestQueue {
     }
 
     return new Promise<ExecResult>((resolve, reject) => {
-      this.items.push({
-        date,
-        uniqueId,
-        command,
-        request,
-        resolve,
-        reject,
-      });
+      item.resolve = resolve;
+      item.reject = reject;
+      this.items.push(item);
       if (this.dequeue() === DequeueResult.Pending) {
-        this.itemStatus[uniqueId] = CohortRequestStatus.Queued;
+        this.setItemStatus(item, CohortRequestStatus.Queued);
         // add an output to indicate the request has been queued
         const output = {
           code: 0,
@@ -121,17 +119,17 @@ export class CohortRequestQueue {
     }
     const onError = (err: ExecResult | string) => {
       this.workingOnPromise = false;
-      this.itemStatus[item.uniqueId] = CohortRequestStatus.Error;
+      this.setItemStatus(item, CohortRequestStatus.Error);
       item.reject(err);
       if (this.onJobError) {
-        this.onJobError(item, this.itemStatus[item.uniqueId], err);
+        this.onJobError(item, this.getItemStatus(item.uniqueId), err);
       }
       this.dequeue();
     };
 
     try {
       this.workingOnPromise = true;
-      this.itemStatus[item.uniqueId] = CohortRequestStatus.Pending;
+      this.setItemStatus(item, CohortRequestStatus.Pending);
       executeCommand(
         item.command,
         this.shellScriptPath,
@@ -143,9 +141,14 @@ export class CohortRequestQueue {
           value.execPromise
             .then(() => {
               this.workingOnPromise = false;
-              this.itemStatus[item.uniqueId] = CohortRequestStatus.Complete;
+              this.setItemStatus(item, CohortRequestStatus.Complete);
               if (this.onJobComplete) {
-                this.onJobComplete(item, this.itemStatus[item.uniqueId], value);
+                this.onJobComplete(
+                  item,
+                  this.getItemStatus(item.uniqueId),
+                  value,
+                  this.userDataPath
+                );
               }
               this.dequeue();
             })
@@ -160,7 +163,18 @@ export class CohortRequestQueue {
     return DequeueResult.Success;
   }
 
-  public getItemStatus(uniqueId: string): CohortRequestStatus | undefined {
-    return this.itemStatus[uniqueId];
+  public getItemStatus(uniqueId: string): CohortRequestStatus {
+    return (
+      this.requestTracker.getRequestStatus(uniqueId) ||
+      CohortRequestStatus.Error
+    );
+  }
+
+  public setItemStatus(
+    item: QueueItem<ExecResult>,
+    status: CohortRequestStatus
+  ): void {
+    this.requestTracker.setRequestStatus(item.uniqueId, status);
+    this.requestTracker.updateJobStatus(item, status);
   }
 }
