@@ -1,9 +1,10 @@
 import { Level } from 'level';
-import { chain, Dictionary, maxBy } from 'lodash';
+import { Dictionary } from 'lodash';
 import {
   CohortRequest,
   CohortRequestStatus,
   Event,
+  getRequestStatusFromEvents,
   Job,
   QueueItem,
 } from '@cbioportal-cohort-request/cohort-request-utils';
@@ -15,26 +16,7 @@ type EventDB = Level<number, Event>;
 
 export async function initRequestStatus(eventDB: EventDB) {
   const events = await fetchAllRecords(eventDB);
-  return (
-    chain(events)
-      .groupBy((d) => d.jobId)
-      .map((value) => maxBy(value, (v) => v.eventDate))
-      // ignore duplicate events
-      .filter((event) => event.status !== CohortRequestStatus.Duplicate)
-      .map((event) => ({
-        ...event,
-        // if no 'Complete' event logged for a certain job, then assume that it has failed
-        status:
-          event.status === CohortRequestStatus.Complete
-            ? CohortRequestStatus.Complete
-            : CohortRequestStatus.Error,
-      }))
-      .keyBy((d) => d.jobId)
-      .transform((result, value, key) => {
-        result[key] = value.status;
-      }, {})
-      .value()
-  );
+  return getRequestStatusFromEvents(events);
 }
 
 function fetchAllRecords<K, V>(db?: Level<K, V>) {
