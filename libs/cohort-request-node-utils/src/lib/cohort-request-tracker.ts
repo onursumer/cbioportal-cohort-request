@@ -112,25 +112,19 @@ function logEvent(
   status: CohortRequestStatus,
   eventDB?: EventDB
 ) {
-  let event: Event = {
-    jobId: item.uniqueId,
+  const { jobId, requesterId, requesterName, users, additionalData } =
+    initJob(item);
+  const event: Event = {
+    jobId,
     status,
     eventDate: new Date(),
+    // for duplicate requests or multiple retries for the same unique job id,
+    // log additional info since we may have different data for different requests
+    requesterId,
+    requesterName,
+    users,
+    additionalData,
   };
-
-  // for duplicate request for the same unique job id,
-  // log additional info since we only keep one job object per key
-  if (status === CohortRequestStatus.Duplicate) {
-    const { requesterId, requesterName, users, additionalData } = initJob(item);
-
-    event = {
-      ...event,
-      requesterId,
-      requesterName,
-      users,
-      additionalData,
-    };
-  }
 
   eventDB
     ?.put(Date.parse(event.eventDate.toString()), event)
@@ -143,11 +137,21 @@ export function updateJobStatus(
   jobDB?: JobDB,
   eventDB?: EventDB
 ) {
-  jobDB?.get(item.uniqueId).catch((error) => {
-    if (error.code === 'LEVEL_NOT_FOUND') {
-      updateJob(item, jobDB);
-    }
-  });
+  jobDB
+    ?.get(item.uniqueId)
+    .catch((error) => {
+      if (error.code === 'LEVEL_NOT_FOUND') {
+        // this is the first time we are adding the job to the DB
+        updateJob(item, jobDB);
+      }
+    })
+    .then(() => {
+      // job already exits in the DB, but there might be previous errors
+      // so every time we had to rerun the job we should also overwrite it with the latest data provided by the user
+      if (status === CohortRequestStatus.Pending) {
+        updateJob(item, jobDB);
+      }
+    });
 
   logEvent(item, status, eventDB);
 }

@@ -22,10 +22,20 @@ export function getRequestStatusFromEvents(
 }
 
 export function groupEventsByJobIdIgnoreDuplicates(events: Event[]) {
+  return groupEventsByJobId(
+    events,
+    (event) => event.status !== CohortRequestStatus.Duplicate
+  );
+}
+
+export function groupEventsByJobId(
+  events: Event[],
+  filter: (event: Event) => boolean = () => true
+) {
   return (
     chain(events)
       // ignore duplicate events
-      .filter((event) => event.status !== CohortRequestStatus.Duplicate)
+      .filter(filter)
       .groupBy((d) => d.jobId)
       .value()
   );
