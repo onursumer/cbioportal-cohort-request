@@ -1,34 +1,27 @@
-import { Level } from 'level';
 import { Dictionary } from 'lodash';
 import {
   CohortRequest,
   CohortRequestStatus,
+  EnhancedJob,
   Event,
   getRequestStatusFromEvents,
+  groupEventsByJobId,
   Job,
   QueueItem,
 } from '@cbioportal-cohort-request/cohort-request-utils';
 import { persistFiles } from './cohort-request-process';
 import { ExecResult } from './execute-command';
-
-type JobDB = Level<string, Job>;
-type EventDB = Level<number, Event>;
+import {
+  EventDB,
+  fetchAllEvents,
+  fetchEventsByJobId,
+  initEventDB,
+} from './event-repository';
+import { fetchAllJobs, fetchJobById, initJobDB, JobDB } from './job-repository';
 
 export async function initRequestStatus(eventDB: EventDB) {
-  const events = await fetchAllRecords(eventDB);
+  const events = await fetchAllEvents(eventDB);
   return getRequestStatusFromEvents(events);
-}
-
-function fetchAllRecords<K, V>(db?: Level<K, V>) {
-  return db?.values().all() || Promise.resolve([]);
-}
-
-function initJobDB(location = 'leveldb/jobs'): JobDB {
-  return new Level<string, Job>(location, { valueEncoding: 'json' });
-}
-
-function initEventDB(location = 'leveldb/events'): EventDB {
-  return new Level<number, Event>(location, { valueEncoding: 'json' });
 }
 
 function updateJob(item: QueueItem<ExecResult>, jobDB: JobDB) {
@@ -194,11 +187,54 @@ export class CohortRequestTracker {
     }
   }
 
-  public fetchAllEvents() {
-    return fetchAllRecords(this.eventDB);
+  public fetchAllEvents(): Promise<Event[]> {
+    return fetchAllEvents(this.eventDB);
   }
 
-  public fetchAllJobs() {
-    return fetchAllRecords(this.jobDB);
+  public fetchEventsByJobId(jobId: string): Promise<Event[]> {
+    return fetchEventsByJobId(this.eventDB, jobId);
+  }
+
+  public fetchAllJobs(): Promise<Job[]> {
+    return fetchAllJobs(this.jobDB);
+  }
+
+  public fetchJobById(jobId: string): Promise<Job> {
+    return fetchJobById(this.jobDB, jobId);
+  }
+
+  public fetchAllJobsDetailed(): Promise<EnhancedJob[]> {
+    return Promise.all([this.fetchAllEvents(), this.fetchAllJobs()]).then(
+      (response) => {
+        const events: Event[] = response[0];
+        const jobs: Job[] = response[1];
+
+        const statusMap = getRequestStatusFromEvents(events);
+        const eventsByJobId = groupEventsByJobId(events);
+
+        return jobs.map((job) => ({
+          ...job,
+          events: eventsByJobId[job.jobId],
+          status: statusMap[job.jobId],
+        }));
+      }
+    );
+  }
+
+  public fetchJobDetailedById(jobId: string): Promise<EnhancedJob> {
+    return Promise.all([
+      this.fetchEventsByJobId(jobId),
+      this.fetchJobById(jobId),
+    ]).then((response) => {
+      const events: Event[] = response[0];
+      const job: Job = response[1];
+      const status = getRequestStatusFromEvents(events)[jobId];
+
+      return {
+        ...job,
+        events,
+        status,
+      };
+    });
   }
 }

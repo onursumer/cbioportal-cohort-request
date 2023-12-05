@@ -5,6 +5,7 @@ import {
 } from '@cbioportal-cohort-request/cohort-request-node-utils';
 import { CohortRequest } from '@cbioportal-cohort-request/cohort-request-utils';
 import { requestCohort } from './app/request-cohort';
+import { flatten, isEmpty } from 'lodash';
 
 const API_ROOT = '/api';
 const host = process.env.HOST ?? 'localhost';
@@ -40,11 +41,27 @@ app.post(`${API_ROOT}/cohort-request`, (req, res) => {
 });
 
 app.get(`${API_ROOT}/event`, (req, res) => {
-  requestTracker.fetchAllEvents().then((response) => res.send(response));
+  const jobId = req.query['jobId'] as string;
+  const promise = isEmpty(jobId)
+    ? requestTracker.fetchAllEvents()
+    : requestTracker.fetchEventsByJobId(jobId);
+  promise.then((response) => res.send(response));
 });
 
 app.get(`${API_ROOT}/job`, (req, res) => {
-  requestTracker.fetchAllJobs().then((response) => res.send(response));
+  const jobId = req.query['jobId'] as string;
+  const promise = isEmpty(jobId)
+    ? requestTracker.fetchAllJobs()
+    : requestTracker.fetchJobById(jobId);
+  promise.then((response) => res.send(flatten([response])));
+});
+
+app.get(`${API_ROOT}/job-detailed`, (req, res) => {
+  const jobId = req.query['jobId'] as string;
+  const promise = isEmpty(jobId)
+    ? requestTracker.fetchAllJobsDetailed()
+    : requestTracker.fetchJobDetailedById(jobId);
+  promise.then((response) => res.send(flatten([response])));
 });
 
 app.listen(port, host, () => {

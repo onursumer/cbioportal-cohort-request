@@ -52,6 +52,11 @@ export interface Event {
   }[];
 }
 
+export interface EnhancedJob extends Job {
+  events: Event[];
+  status: CohortRequestStatus;
+}
+
 export interface QueueItem<T> {
   uniqueId: string;
   date: Date;

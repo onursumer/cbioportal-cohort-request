@@ -1,10 +1,12 @@
 import {
   CohortRequest,
   CohortRequestResponse,
+  EnhancedJob,
   Event,
   Job,
 } from './cohort-request-model';
 import axios, { AxiosResponse } from 'axios';
+import { Dictionary } from 'lodash';
 
 export async function sendCohortRequest(
   request: CohortRequest
@@ -12,10 +14,20 @@ export async function sendCohortRequest(
   return axios.post('/api/cohort-request', request);
 }
 
-export async function fetchAllEvents(): Promise<AxiosResponse<Event[]>> {
-  return axios.get('/api/event');
+export async function fetchEvents(
+  params?: Dictionary<string>
+): Promise<AxiosResponse<Event[]>> {
+  return axios.get('/api/event', { params });
 }
 
-export async function fetchAllJobs(): Promise<AxiosResponse<Job[]>> {
-  return axios.get('/api/job');
+export async function fetchJobs(
+  params?: Dictionary<string>
+): Promise<AxiosResponse<Job[]>> {
+  return axios.get('/api/job', { params });
+}
+
+export async function fetchJobsDetailed(
+  params?: Dictionary<string>
+): Promise<AxiosResponse<EnhancedJob[]>> {
+  return axios.get('/api/job-detailed', { params });
 }
