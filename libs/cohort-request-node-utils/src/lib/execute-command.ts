@@ -45,12 +45,12 @@ export async function executeCommand(
 
   execPromise
     // update status when done
-    .then((data) => {
+    .then((data: ExecOutput) => {
       status = CohortRequestStatus.Complete;
       output = data;
     })
     // update status in case of an error
-    .catch((data) => {
+    .catch((data: ExecOutput) => {
       status = CohortRequestStatus.Error;
       output = data;
     })
@@ -80,4 +80,22 @@ export function execAsync(
 
 export function delay(timeInMilliseconds: number) {
   return new Promise((resolve) => setTimeout(resolve, timeInMilliseconds));
+}
+
+export function getFinalExecResult(
+  uniqueId: string,
+  execPromise: Promise<ExecOutput>,
+  output: ExecOutput
+): ExecResult {
+  return {
+    date: new Date(),
+    // treat exit code 0 as complete, non-zero as error
+    status:
+      output.code === 0
+        ? CohortRequestStatus.Complete
+        : CohortRequestStatus.Error,
+    uniqueId,
+    execPromise,
+    output,
+  };
 }

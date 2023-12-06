@@ -1,6 +1,7 @@
 import {
   CohortRequest,
   CohortRequestStatus,
+  ExecOutput,
   QueueItem,
 } from '@cbioportal-cohort-request/cohort-request-utils';
 import {
@@ -14,7 +15,11 @@ import {
   JobCompleteHandler,
   JobErrorHandler,
 } from './cohort-request-tracker';
-import { ExecResult, executeCommand } from './execute-command';
+import {
+  ExecResult,
+  executeCommand,
+  getFinalExecResult,
+} from './execute-command';
 import { isString } from 'lodash';
 
 enum DequeueResult {
@@ -144,9 +149,15 @@ export class CohortRequestQueue {
       )
         .then((value) => {
           value.execPromise
-            .then(() => {
+            .then((output: ExecOutput) => {
               this.workingOnPromise = false;
-              this.setItemStatus(item, CohortRequestStatus.Complete, value);
+              const result = getFinalExecResult(
+                value.uniqueId,
+                value.execPromise,
+                output
+              );
+              // we should only get here if output.code === 0, so assume status complete
+              this.setItemStatus(item, CohortRequestStatus.Complete, result);
               if (this.onJobComplete) {
                 this.onJobComplete(
                   item,
@@ -157,7 +168,11 @@ export class CohortRequestQueue {
               }
               this.dequeue();
             })
-            .catch(() => onError(value));
+            .catch((output: ExecOutput) => {
+              onError(
+                getFinalExecResult(value.uniqueId, value.execPromise, output)
+              );
+            });
           item.resolve(value);
         })
         .catch(onError);
