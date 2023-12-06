@@ -5,7 +5,7 @@ import {
 import { cd, exec, pwd } from 'shelljs';
 import * as path from 'path';
 
-const SYNC_EXECUTION_THRESHOLD_MS = 500;
+export const SYNC_EXECUTION_THRESHOLD_MS = 500;
 
 export interface ExecResult {
   uniqueId: string;

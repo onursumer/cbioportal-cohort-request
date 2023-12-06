@@ -2,10 +2,15 @@ import express from 'express';
 import {
   CohortRequestQueue,
   CohortRequestTracker,
+  SYNC_EXECUTION_THRESHOLD_MS,
 } from '@cbioportal-cohort-request/cohort-request-node-utils';
 import { CohortRequest } from '@cbioportal-cohort-request/cohort-request-utils';
 import { requestCohort } from './app/request-cohort';
 import { flatten, isEmpty } from 'lodash';
+import { config } from 'dotenv';
+
+// config dotenv before everything else to mae sure process.env is populated from .env file
+config();
 
 const API_ROOT = '/api';
 const host = process.env.HOST ?? 'localhost';
@@ -16,12 +21,16 @@ const shellScriptPath =
 const levelDbPath = process.env.LEVELDB ?? 'leveldb';
 const userDataPath = process.env.DATA_PATH ?? 'user_data';
 const userUploadThreshold = process.env.UPLOAD_THRESHOLD ?? '100mb';
+const syncExecutionThresholdMs =
+  Number(process.env.SYNC_EXECUTION_THRESHOLD_MS) ??
+  SYNC_EXECUTION_THRESHOLD_MS;
 
 const requestTracker = new CohortRequestTracker(levelDbPath);
 const requestQueue = new CohortRequestQueue(
   shellScriptPath,
   userDataPath,
-  requestTracker
+  requestTracker,
+  syncExecutionThresholdMs
 );
 
 const app = express();
