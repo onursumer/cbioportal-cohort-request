@@ -8,6 +8,20 @@ import { filesize } from 'filesize';
 import React from 'react';
 import { Link } from 'react-router-dom';
 
+export function defaultGridProps() {
+  return {
+    enableCellTextSelection: true,
+    domLayout: 'autoHeight',
+    pagination: true,
+    paginationPageSizeSelector: [10, 25, 50, 100, 500],
+    paginationPageSize: 25,
+    autoSizeStrategy: {
+      type: 'fitGridWidth',
+      defaultMinWidth: 150,
+    },
+  };
+}
+
 export function StatusColumn(props: { value: CohortRequestStatus }) {
   const statusStyleMap = {
     [CohortRequestStatus.Error]: 'text-danger',

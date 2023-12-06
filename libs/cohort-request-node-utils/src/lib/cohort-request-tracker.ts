@@ -103,6 +103,7 @@ function getAdditionalDataSummary(request: CohortRequest) {
 function logEvent(
   item: QueueItem<ExecResult>,
   status: CohortRequestStatus,
+  result?: ExecResult,
   eventDB?: EventDB
 ) {
   const { jobId, requesterId, requesterName, users, additionalData } =
@@ -111,6 +112,7 @@ function logEvent(
     jobId,
     status,
     eventDate: new Date(),
+    output: result?.output,
     // for duplicate requests or multiple retries for the same unique job id,
     // log additional info since we may have different data for different requests
     requesterId,
@@ -127,6 +129,7 @@ function logEvent(
 export function updateJobStatus(
   item: QueueItem<ExecResult>,
   status: CohortRequestStatus,
+  result?: ExecResult,
   jobDB?: JobDB,
   eventDB?: EventDB
 ) {
@@ -146,7 +149,7 @@ export function updateJobStatus(
       }
     });
 
-  logEvent(item, status, eventDB);
+  logEvent(item, status, result, eventDB);
 }
 
 export class CohortRequestTracker {
@@ -172,9 +175,10 @@ export class CohortRequestTracker {
 
   public updateJobStatus(
     item: QueueItem<ExecResult>,
-    status: CohortRequestStatus
+    status: CohortRequestStatus,
+    result?: ExecResult
   ) {
-    updateJobStatus(item, status, this.jobDB, this.eventDB);
+    updateJobStatus(item, status, result, this.jobDB, this.eventDB);
   }
 
   public getRequestStatus(id: string) {

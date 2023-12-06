@@ -10,6 +10,7 @@ import {
 import {
   AdditionalDataColumn,
   dateFormatter,
+  defaultGridProps,
   EventColumn,
   JobIdColumn,
   StatusColumn,
@@ -50,11 +51,11 @@ export function RequestTracker(props: RequestTrackerProps) {
         color: '#2c3e50',
       }}
     >
-      <div className="ag-theme-quartz" style={{ height: 600 }}>
+      <div className="ag-theme-quartz">
         <AgGridReact
           rowData={rowData}
           columnDefs={colDefs}
-          enableCellTextSelection={true}
+          {...defaultGridProps()}
         />
       </div>
     </Container>

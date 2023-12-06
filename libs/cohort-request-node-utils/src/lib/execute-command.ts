@@ -1,14 +1,11 @@
-import { CohortRequestStatus } from '@cbioportal-cohort-request/cohort-request-utils';
+import {
+  CohortRequestStatus,
+  ExecOutput,
+} from '@cbioportal-cohort-request/cohort-request-utils';
 import { cd, exec, pwd } from 'shelljs';
 import * as path from 'path';
 
 const SYNC_EXECUTION_THRESHOLD_MS = 500;
-
-export interface ExecOutput {
-  code: number;
-  stdout: string;
-  stderr: string;
-}
 
 export interface ExecResult {
   uniqueId: string;

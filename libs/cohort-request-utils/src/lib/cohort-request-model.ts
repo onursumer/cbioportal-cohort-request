@@ -25,6 +25,12 @@ export interface CohortRequestResponse {
   message: string;
 }
 
+export interface ExecOutput {
+  code: number;
+  stdout: string;
+  stderr: string;
+}
+
 export interface Job {
   jobId: string;
   requestDate: Date;
@@ -50,6 +56,7 @@ export interface Event {
     filename: string;
     size: number;
   }[];
+  output?: ExecOutput;
 }
 
 export interface EnhancedJob extends Job {

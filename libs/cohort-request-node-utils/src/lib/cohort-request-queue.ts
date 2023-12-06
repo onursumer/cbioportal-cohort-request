@@ -15,6 +15,7 @@ import {
   JobErrorHandler,
 } from './cohort-request-tracker';
 import { ExecResult, executeCommand } from './execute-command';
+import { isString } from 'lodash';
 
 enum DequeueResult {
   Pending = 'Pending',
@@ -119,7 +120,11 @@ export class CohortRequestQueue {
     }
     const onError = (err: ExecResult | string) => {
       this.workingOnPromise = false;
-      this.setItemStatus(item, CohortRequestStatus.Error);
+      this.setItemStatus(
+        item,
+        CohortRequestStatus.Error,
+        isString(err) ? undefined : (err as ExecResult)
+      );
       item.reject(err);
       if (this.onJobError) {
         this.onJobError(item, this.getItemStatus(item.uniqueId), err);
@@ -141,7 +146,7 @@ export class CohortRequestQueue {
           value.execPromise
             .then(() => {
               this.workingOnPromise = false;
-              this.setItemStatus(item, CohortRequestStatus.Complete);
+              this.setItemStatus(item, CohortRequestStatus.Complete, value);
               if (this.onJobComplete) {
                 this.onJobComplete(
                   item,
@@ -152,7 +157,7 @@ export class CohortRequestQueue {
               }
               this.dequeue();
             })
-            .catch(onError);
+            .catch(() => onError(value));
           item.resolve(value);
         })
         .catch(onError);
@@ -172,9 +177,10 @@ export class CohortRequestQueue {
 
   public setItemStatus(
     item: QueueItem<ExecResult>,
-    status: CohortRequestStatus
+    status: CohortRequestStatus,
+    result?: ExecResult
   ): void {
     this.requestTracker.setRequestStatus(item.uniqueId, status);
-    this.requestTracker.updateJobStatus(item, status);
+    this.requestTracker.updateJobStatus(item, status, result);
   }
 }
