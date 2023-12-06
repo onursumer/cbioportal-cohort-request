@@ -133,18 +133,17 @@ export function updateJobStatus(
   jobDB?: JobDB,
   eventDB?: EventDB
 ) {
-  jobDB
-    ?.get(item.uniqueId)
-    .catch((error) => {
-      if (error.code === 'LEVEL_NOT_FOUND') {
-        // this is the first time we are adding the job to the DB
-        updateJob(item, jobDB);
-      }
-    })
+  fetchJobById(jobDB, item.uniqueId)
     .then(() => {
       // job already exits in the DB, but there might be previous errors
       // so every time we had to rerun the job we should also overwrite it with the latest data provided by the user
       if (status === CohortRequestStatus.Pending) {
+        updateJob(item, jobDB);
+      }
+    })
+    .catch((error) => {
+      if (error.code === 'LEVEL_NOT_FOUND') {
+        // this is the first time we are adding the job to the DB
         updateJob(item, jobDB);
       }
     });
