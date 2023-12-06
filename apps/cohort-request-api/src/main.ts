@@ -42,35 +42,38 @@ app.get(API_ROOT, (req, res) => {
   });
 });
 
-app.post(`${API_ROOT}/cohort-request`, (req, res) => {
+app.post(`${API_ROOT}/cohort-request`, async (req, res) => {
   const cohortRequest: CohortRequest = req.body;
-  requestCohort(cohortRequest, shellScriptPath, requestQueue).then((response) =>
-    res.send(response)
+  const response = await requestCohort(
+    cohortRequest,
+    shellScriptPath,
+    requestQueue
   );
+  res.send(response);
 });
 
-app.get(`${API_ROOT}/event`, (req, res) => {
+app.get(`${API_ROOT}/event`, async (req, res, next) => {
   const jobId = req.query['jobId'] as string;
-  const promise = isEmpty(jobId)
-    ? requestTracker.fetchAllEvents()
-    : requestTracker.fetchEventsByJobId(jobId);
-  promise.then((response) => res.send(response));
+  const response = isEmpty(jobId)
+    ? await requestTracker.fetchAllEvents()
+    : await requestTracker.fetchEventsByJobId(jobId);
+  res.send(response);
 });
 
-app.get(`${API_ROOT}/job`, (req, res) => {
+app.get(`${API_ROOT}/job`, async (req, res, next) => {
   const jobId = req.query['jobId'] as string;
-  const promise = isEmpty(jobId)
-    ? requestTracker.fetchAllJobs()
-    : requestTracker.fetchJobById(jobId);
-  promise.then((response) => res.send(flatten([response])));
+  const response = isEmpty(jobId)
+    ? await requestTracker.fetchAllJobs()
+    : await requestTracker.fetchJobById(jobId);
+  res.send(flatten([response]));
 });
 
-app.get(`${API_ROOT}/job-detailed`, (req, res) => {
+app.get(`${API_ROOT}/job-detailed`, async (req, res, next) => {
   const jobId = req.query['jobId'] as string;
-  const promise = isEmpty(jobId)
-    ? requestTracker.fetchAllJobsDetailed()
-    : requestTracker.fetchJobDetailedById(jobId);
-  promise.then((response) => res.send(flatten([response])));
+  const response = isEmpty(jobId)
+    ? await requestTracker.fetchAllJobsDetailed()
+    : await requestTracker.fetchJobDetailedById(jobId);
+  res.send(flatten([response]));
 });
 
 app.listen(port, host, () => {
