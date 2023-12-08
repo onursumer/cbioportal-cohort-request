@@ -144,7 +144,7 @@ export function JobDetails(props: JobDetailsProps) {
         </Col>
       </Row>
     </Container>
-  ) : undefined;
+  ) : null;
 }
 
 export default JobDetails;

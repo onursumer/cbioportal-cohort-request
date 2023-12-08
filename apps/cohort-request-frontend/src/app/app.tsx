@@ -1,4 +1,4 @@
-import { Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
 
 import styles from './app.module.scss';
 import 'bootstrap/dist/css/bootstrap.css';
@@ -10,11 +10,13 @@ import JobDetails from './job-details/JobDetails';
 export function App() {
   return (
     <div className={styles.wrapper}>
-      <Routes>
-        <Route path="/" element={<Home />}></Route>
-        <Route path="/tracker" element={<RequestTracker />}></Route>
-        <Route path="/job/:id" element={<JobDetails />}></Route>
-      </Routes>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Home />}></Route>
+          <Route path="/tracker" element={<RequestTracker />}></Route>
+          <Route path="/job/:id" element={<JobDetails />}></Route>
+        </Routes>
+      </BrowserRouter>
     </div>
   );
 }
