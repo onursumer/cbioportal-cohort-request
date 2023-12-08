@@ -40,3 +40,7 @@ export function groupEventsByJobId(
       .value()
   );
 }
+
+export function getEventPrimaryKey(event: Event) {
+  return `${event.timestamp}_${event.jobId}_${event.status}`;
+}

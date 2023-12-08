@@ -4,7 +4,11 @@ import {
   CohortRequestTracker,
   SYNC_EXECUTION_THRESHOLD_MS,
 } from '@cbioportal-cohort-request/cohort-request-node-utils';
-import { CohortRequest } from '@cbioportal-cohort-request/cohort-request-utils';
+import {
+  CohortRequest,
+  Event,
+  getEventPrimaryKey,
+} from '@cbioportal-cohort-request/cohort-request-utils';
 import { requestCohort } from './app/request-cohort';
 import { chain, flatten, isEmpty } from 'lodash';
 import { config } from 'dotenv';
@@ -54,10 +58,21 @@ app.post(`${API_ROOT}/cohort-request`, async (req, res) => {
 
 app.get(`${API_ROOT}/event`, async (req, res, next) => {
   const jobId = req.query['jobId'] as string;
-  const response = isEmpty(jobId)
-    ? await requestTracker.fetchAllEvents()
-    : await requestTracker.fetchEventsByJobId(jobId);
-  res.send(response);
+  const eventId = req.query['eventId'] as string;
+  const response: Event[] = [];
+
+  if (isEmpty(jobId) && isEmpty(eventId)) {
+    response.push(...(await requestTracker.fetchAllEvents()));
+  } else {
+    if (!isEmpty(jobId)) {
+      response.push(...(await requestTracker.fetchEventsByJobId(jobId)));
+    }
+    if (!isEmpty(eventId)) {
+      response.push(await requestTracker.fetchEventById(eventId));
+    }
+  }
+
+  res.send(chain(response).compact().uniqBy(getEventPrimaryKey).value());
 });
 
 app.get(`${API_ROOT}/job`, async (req, res, next) => {

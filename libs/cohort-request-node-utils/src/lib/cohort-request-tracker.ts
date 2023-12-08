@@ -14,6 +14,7 @@ import { ExecResult } from './execute-command';
 import {
   EventDB,
   fetchAllEvents,
+  fetchEventById,
   fetchEventsByJobId,
   initEventDB,
   insertEvent,
@@ -203,6 +204,10 @@ export class CohortRequestTracker {
 
   public fetchEventsByJobId(jobId: string): Promise<Event[]> {
     return fetchEventsByJobId(jobId, this.eventDB);
+  }
+
+  public fetchEventById(eventId: string): Promise<Event | undefined> {
+    return fetchEventById(eventId, this.eventDB);
   }
 
   public fetchAllJobs(): Promise<Job[]> {

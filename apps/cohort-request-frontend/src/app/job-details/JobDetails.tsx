@@ -1,20 +1,22 @@
 import styles from './JobDetails.module.scss';
+import { AgGridReact } from 'ag-grid-react';
 import React, { useEffect, useState } from 'react';
 import { Col, Container, Row } from 'react-bootstrap';
+import { useParams } from 'react-router-dom';
 import {
   EnhancedJob,
   Event,
   fetchJobsDetailed,
 } from '@cbioportal-cohort-request/cohort-request-utils';
-import { AgGridReact } from 'ag-grid-react';
 import {
   AdditionalDataColumn,
   dateFormatter,
   defaultGridProps,
+  DetailsRow,
+  EventDateColumn,
   StatusColumn,
   stringArrayFormatter,
-} from '../column-formatter/column-formatter';
-import { useParams } from 'react-router-dom';
+} from '../table-formatter/table-formatter';
 
 /* eslint-disable-next-line */
 export interface JobDetailsProps {}
@@ -25,6 +27,7 @@ function EventTable(props: { events?: Event[] }) {
       field: 'timestamp',
       valueFormatter: dateFormatter,
       headerName: 'Event Date',
+      cellRenderer: EventDateColumn,
     },
     { field: 'requesterId', filter: true },
     { field: 'requesterName', filter: true },
@@ -49,6 +52,8 @@ function EventTable(props: { events?: Event[] }) {
 
 export function JobDetails(props: JobDetailsProps) {
   const { id } = useParams();
+  const [job, setJob] = useState<EnhancedJob | undefined>(undefined);
+
   useEffect(() => {
     if (id) {
       fetchJobsDetailed({ jobId: id }).then((result) => {
@@ -56,8 +61,6 @@ export function JobDetails(props: JobDetailsProps) {
       });
     }
   }, [id]);
-
-  const [job, setJob] = useState<EnhancedJob | undefined>(undefined);
 
   const events = job?.events.map((event) => ({
     ...event,
@@ -81,58 +84,33 @@ export function JobDetails(props: JobDetailsProps) {
           <span className={styles.jobPageTitle}>Job {job.jobId}</span>
         </Col>
       </Row>
-      <Row>
-        <Col className="d-flex flex-column col-2">
-          <strong>Status:</strong>
-        </Col>
-        <Col className="d-flex flex-column">
-          <StatusColumn value={job.status} />
-        </Col>
-      </Row>
-      <Row>
-        <Col className="d-flex flex-column col-2">
-          <strong>Requester ID:</strong>
-        </Col>
-        <Col className="d-flex flex-column">{job?.requesterId}</Col>
-      </Row>
-      <Row>
-        <Col className="d-flex flex-column col-2">
-          <strong>Requester Name:</strong>
-        </Col>
-        <Col className="d-flex flex-column">{job?.requesterName}</Col>
-      </Row>
-      <Row>
-        <Col className="d-flex flex-column col-2">
-          <strong>Study Id(s):</strong>
-        </Col>
-        <Col className="d-flex flex-column">
-          {stringArrayFormatter({ value: job.studyIds })}
-        </Col>
-      </Row>
-      <Row>
-        <Col className="d-flex flex-column col-2">
-          <strong>Case Id(s):</strong>
-        </Col>
-        <Col className="d-flex flex-column">
-          {stringArrayFormatter({ value: job.caseIds })}
-        </Col>
-      </Row>
-      <Row>
-        <Col className="d-flex flex-column col-2">
-          <strong>User Id(s):</strong>
-        </Col>
-        <Col className="d-flex flex-column">
-          {stringArrayFormatter({ value: job.users })}
-        </Col>
-      </Row>
-      <Row>
-        <Col className="d-flex flex-column col-2">
-          <strong>Additional Data:</strong>
-        </Col>
-        <Col className="d-flex flex-column">
-          <AdditionalDataColumn value={job.additionalData} />
-        </Col>
-      </Row>
+
+      <DetailsRow title={<strong>Status:</strong>} value={job.status} />
+      <DetailsRow
+        title={<strong>Requester ID:</strong>}
+        value={job.requesterId}
+      />
+      <DetailsRow
+        title={<strong>Requester Name:</strong>}
+        value={job.requesterName}
+      />
+      <DetailsRow
+        title={<strong>Study Id(s):</strong>}
+        value={stringArrayFormatter({ value: job.studyIds })}
+      />
+      <DetailsRow
+        title={<strong>Case ID(s):</strong>}
+        value={stringArrayFormatter({ value: job.caseIds })}
+      />
+      <DetailsRow
+        title={<strong>User ID(s):</strong>}
+        value={stringArrayFormatter({ value: job.users })}
+      />
+      <DetailsRow
+        title={<strong>Additional Data:</strong>}
+        value={<AdditionalDataColumn value={job.additionalData} />}
+      />
+
       <Row>
         <Col className="d-flex flex-column mt-3">
           <strong>Recorded Events:</strong>

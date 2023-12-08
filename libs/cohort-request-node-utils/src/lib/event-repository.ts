@@ -1,5 +1,8 @@
 import { Level } from 'level';
-import { Event } from '@cbioportal-cohort-request/cohort-request-utils';
+import {
+  Event,
+  getEventPrimaryKey,
+} from '@cbioportal-cohort-request/cohort-request-utils';
 import { fetchAllRecords, insertRecord } from './repository';
 
 export type EventDB = Level<string, Event>;
@@ -21,10 +24,13 @@ export function fetchEventsByJobId(
   );
 }
 
+export function fetchEventById(
+  eventId: string,
+  eventDB?: EventDB
+): Promise<Event | undefined> {
+  return eventDB?.get(eventId) || Promise.resolve(undefined);
+}
+
 export function insertEvent(event: Event, eventDB?: EventDB): Promise<void> {
-  return insertRecord(
-    event,
-    (event) => `${event.timestamp}_${event.jobId}_${event.status}`,
-    eventDB
-  );
+  return insertRecord(event, getEventPrimaryKey, eventDB);
 }

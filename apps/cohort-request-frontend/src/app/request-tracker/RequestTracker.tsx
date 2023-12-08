@@ -15,7 +15,7 @@ import {
   JobIdColumn,
   StatusColumn,
   stringArrayFormatter,
-} from '../column-formatter/column-formatter';
+} from '../table-formatter/table-formatter';
 
 /* eslint-disable-next-line */
 export interface RequestTrackerProps {}
