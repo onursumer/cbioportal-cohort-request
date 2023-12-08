@@ -22,7 +22,7 @@ export interface JobDetailsProps {}
 function EventTable(props: { events?: Event[] }) {
   const colDefs = [
     {
-      field: 'eventTimestamp',
+      field: 'timestamp',
       valueFormatter: dateFormatter,
       headerName: 'Event Date',
     },

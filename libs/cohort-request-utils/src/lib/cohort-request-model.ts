@@ -47,7 +47,7 @@ export interface Job {
 
 export interface Event {
   jobId: string;
-  eventTimestamp: number;
+  timestamp: number;
   status: CohortRequestStatus;
   requesterId?: string;
   requesterName?: string;

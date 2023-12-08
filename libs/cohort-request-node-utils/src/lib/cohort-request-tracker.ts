@@ -16,8 +16,15 @@ import {
   fetchAllEvents,
   fetchEventsByJobId,
   initEventDB,
+  insertEvent,
 } from './event-repository';
-import { fetchAllJobs, fetchJobById, initJobDB, JobDB } from './job-repository';
+import {
+  fetchAllJobs,
+  fetchJobById,
+  initJobDB,
+  insertJob,
+  JobDB,
+} from './job-repository';
 
 export async function initRequestStatus(eventDB: EventDB) {
   const events = await fetchAllEvents(eventDB);
@@ -25,9 +32,9 @@ export async function initRequestStatus(eventDB: EventDB) {
 }
 
 function updateJob(item: QueueItem<ExecResult>, jobDB: JobDB) {
-  jobDB
-    .put(item.uniqueId, initJob(item))
-    .catch((error) => console.log(JSON.stringify(error)));
+  insertJob(initJob(item), jobDB).catch((error) =>
+    console.log(JSON.stringify(error))
+  );
 }
 
 export type JobCompleteHandler = (
@@ -111,7 +118,7 @@ function logEvent(
   const event: Event = {
     jobId,
     status,
-    eventTimestamp: Date.now(),
+    timestamp: Date.now(),
     output: result?.output,
     // for duplicate requests or multiple retries for the same unique job id,
     // log additional info since we may have different data for different requests
@@ -121,9 +128,9 @@ function logEvent(
     additionalData,
   };
 
-  eventDB
-    ?.put(event.eventTimestamp, event)
-    .catch((error) => console.log(JSON.stringify(error)));
+  insertEvent(event, eventDB).catch((error) =>
+    console.log(JSON.stringify(error))
+  );
 }
 
 export function updateJobStatus(

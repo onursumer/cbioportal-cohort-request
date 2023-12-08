@@ -1,6 +1,6 @@
 import { Level } from 'level';
 import { Job } from '@cbioportal-cohort-request/cohort-request-utils';
-import { fetchAllRecords } from './repository';
+import { fetchAllRecords, insertRecord } from './repository';
 
 export type JobDB = Level<string, Job>;
 
@@ -17,4 +17,8 @@ export function fetchJobById(
   jobDB?: JobDB
 ): Promise<Job | undefined> {
   return jobDB?.get(jobId) || Promise.resolve(undefined);
+}
+
+export function insertJob(job: Job, jobDB?: JobDB) {
+  return insertRecord(job, (job) => job.jobId, jobDB);
 }

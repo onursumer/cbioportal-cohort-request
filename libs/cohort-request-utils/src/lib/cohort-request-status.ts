@@ -5,7 +5,7 @@ export function getRequestStatusFromEvents(
   events: Event[]
 ): Dictionary<CohortRequestStatus> {
   return chain(groupEventsByJobIdIgnoreDuplicates(events))
-    .map((value) => maxBy(value, (v) => v.eventTimestamp))
+    .map((value) => maxBy(value, (v) => v.timestamp))
     .map((event) => ({
       ...event,
       // if no 'Complete' event logged for a certain job, then assume that it has failed
