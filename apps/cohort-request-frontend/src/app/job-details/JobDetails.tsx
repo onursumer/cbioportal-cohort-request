@@ -21,7 +21,11 @@ export interface JobDetailsProps {}
 
 function EventTable(props: { events?: Event[] }) {
   const colDefs = [
-    { field: 'eventDate', valueFormatter: dateFormatter },
+    {
+      field: 'eventTimestamp',
+      valueFormatter: dateFormatter,
+      headerName: 'Event Date',
+    },
     { field: 'requesterId', filter: true },
     { field: 'requesterName', filter: true },
     { field: 'users', valueFormatter: stringArrayFormatter, filter: true },

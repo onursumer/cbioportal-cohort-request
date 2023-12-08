@@ -19,7 +19,7 @@ export async function requestCohort(
 ): Promise<CohortRequestResponse> {
   writeCasesToTempFile(request);
   // use the queue if provided to execute the command
-  const { status, output, uniqueId, date } = requestQueue
+  const { status, output, uniqueId, timestamp } = requestQueue
     ? await requestQueue.enqueue(request)
     : await executeCommand(
         defaultRequestToCommand(request, shellScriptPath),
@@ -30,7 +30,7 @@ export async function requestCohort(
   return {
     status,
     uniqueId,
-    date,
+    timestamp,
     // TODO return user friendly message
     message: output?.stderr || output?.stdout || '',
   };

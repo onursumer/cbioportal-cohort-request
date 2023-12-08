@@ -83,7 +83,7 @@ export function defaultJobErrorHandler(
 function initJob(item: QueueItem<ExecResult>): Job {
   return {
     jobId: item.uniqueId,
-    requestDate: item.date,
+    requestTimestamp: item.timestamp,
     requesterId: item.request.id,
     requesterName: item.request.name,
     studyIds: item.request.studyIds,
@@ -111,7 +111,7 @@ function logEvent(
   const event: Event = {
     jobId,
     status,
-    eventDate: new Date(),
+    eventTimestamp: Date.now(),
     output: result?.output,
     // for duplicate requests or multiple retries for the same unique job id,
     // log additional info since we may have different data for different requests
@@ -122,7 +122,7 @@ function logEvent(
   };
 
   eventDB
-    ?.put(Date.parse(event.eventDate.toString()), event)
+    ?.put(event.eventTimestamp, event)
     .catch((error) => console.log(JSON.stringify(error)));
 }
 

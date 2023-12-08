@@ -58,10 +58,10 @@ export class CohortRequestQueue {
     const command = requestToCommand(request, this.shellScriptPath);
     const uniqueId = requestToUniqueId(request);
     const status = this.getItemStatus(uniqueId);
-    const date = new Date();
+    const timestamp = Date.now();
 
     const item: QueueItem<ExecResult> = {
-      date,
+      timestamp,
       uniqueId,
       command,
       request,
@@ -85,7 +85,7 @@ export class CohortRequestQueue {
       };
       return Promise.resolve({
         uniqueId,
-        date,
+        timestamp,
         status,
         output,
         execPromise: Promise.resolve(output),
@@ -105,7 +105,7 @@ export class CohortRequestQueue {
           stdout: 'Request has been queued.',
         };
         resolve({
-          date,
+          timestamp,
           uniqueId,
           status: CohortRequestStatus.Queued,
           output,
@@ -144,7 +144,7 @@ export class CohortRequestQueue {
         item.command,
         this.shellScriptPath,
         item.uniqueId,
-        item.date,
+        item.timestamp,
         this.timeout
       )
         .then((value) => {

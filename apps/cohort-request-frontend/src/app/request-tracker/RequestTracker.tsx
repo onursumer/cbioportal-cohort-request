@@ -31,7 +31,11 @@ export function RequestTracker(props: RequestTrackerProps) {
 
   const colDefs = [
     { field: 'jobId', cellRenderer: JobIdColumn },
-    { field: 'requestDate', valueFormatter: dateFormatter },
+    {
+      field: 'requestTimestamp',
+      valueFormatter: dateFormatter,
+      headerName: 'Request Date',
+    },
     { field: 'requesterId', filter: true },
     { field: 'requesterName', filter: true },
     { field: 'studyIds', valueFormatter: stringArrayFormatter, filter: true },
