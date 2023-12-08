@@ -8,10 +8,13 @@ export function initJobDB(location = 'leveldb/jobs'): JobDB {
   return new Level<string, Job>(location, { valueEncoding: 'json' });
 }
 
-export function fetchAllJobs(jobDB: JobDB) {
+export function fetchAllJobs(jobDB?: JobDB): Promise<Job[]> {
   return fetchAllRecords(jobDB);
 }
 
-export function fetchJobById(jobDB: JobDB, jobId: string) {
-  return jobDB.get(jobId);
+export function fetchJobById(
+  jobId: string,
+  jobDB?: JobDB
+): Promise<Job | undefined> {
+  return jobDB?.get(jobId) || Promise.resolve(undefined);
 }

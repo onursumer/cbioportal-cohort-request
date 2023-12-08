@@ -8,11 +8,14 @@ export function initEventDB(location = 'leveldb/events'): EventDB {
   return new Level<number, Event>(location, { valueEncoding: 'json' });
 }
 
-export function fetchAllEvents(eventDB: EventDB) {
+export function fetchAllEvents(eventDB?: EventDB): Promise<Event[]> {
   return fetchAllRecords(eventDB);
 }
 
-export function fetchEventsByJobId(eventDB: EventDB, jobId: string) {
+export function fetchEventsByJobId(
+  jobId: string,
+  eventDB?: EventDB
+): Promise<Event[]> {
   return fetchAllEvents(eventDB).then((events) =>
     events.filter((e) => e.jobId === jobId)
   );

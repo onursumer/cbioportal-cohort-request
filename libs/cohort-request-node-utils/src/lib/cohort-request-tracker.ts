@@ -133,11 +133,11 @@ export function updateJobStatus(
   jobDB?: JobDB,
   eventDB?: EventDB
 ) {
-  fetchJobById(jobDB, item.uniqueId)
-    .then(() => {
+  fetchJobById(item.uniqueId, jobDB)
+    .then((job: Job | undefined) => {
       // job already exits in the DB, but there might be previous errors
       // so every time we had to rerun the job we should also overwrite it with the latest data provided by the user
-      if (status === CohortRequestStatus.Pending) {
+      if (job && status === CohortRequestStatus.Pending) {
         updateJob(item, jobDB);
       }
     })
@@ -195,15 +195,15 @@ export class CohortRequestTracker {
   }
 
   public fetchEventsByJobId(jobId: string): Promise<Event[]> {
-    return fetchEventsByJobId(this.eventDB, jobId);
+    return fetchEventsByJobId(jobId, this.eventDB);
   }
 
   public fetchAllJobs(): Promise<Job[]> {
     return fetchAllJobs(this.jobDB);
   }
 
-  public fetchJobById(jobId: string): Promise<Job> {
-    return fetchJobById(this.jobDB, jobId);
+  public fetchJobById(jobId: string): Promise<Job | undefined> {
+    return fetchJobById(jobId, this.jobDB);
   }
 
   public fetchAllJobsDetailed(): Promise<EnhancedJob[]> {
@@ -224,13 +224,13 @@ export class CohortRequestTracker {
     );
   }
 
-  public fetchJobDetailedById(jobId: string): Promise<EnhancedJob> {
+  public fetchJobDetailedById(jobId: string): Promise<EnhancedJob | undefined> {
     return Promise.all([
       this.fetchEventsByJobId(jobId),
       this.fetchJobById(jobId),
     ]).then((response) => {
       const events: Event[] = response[0];
-      const job: Job = response[1];
+      const job: Job | undefined = response[1];
       const status = getRequestStatusFromEvents(events)[jobId];
 
       return {

@@ -6,7 +6,7 @@ import {
 } from '@cbioportal-cohort-request/cohort-request-node-utils';
 import { CohortRequest } from '@cbioportal-cohort-request/cohort-request-utils';
 import { requestCohort } from './app/request-cohort';
-import { flatten, isEmpty } from 'lodash';
+import { chain, flatten, isEmpty } from 'lodash';
 import { config } from 'dotenv';
 
 // config dotenv before everything else to mae sure process.env is populated from .env file
@@ -73,7 +73,7 @@ app.get(`${API_ROOT}/job-detailed`, async (req, res, next) => {
   const response = isEmpty(jobId)
     ? await requestTracker.fetchAllJobsDetailed()
     : await requestTracker.fetchJobDetailedById(jobId);
-  res.send(flatten([response]));
+  res.send(chain([response]).flatten().compact().value());
 });
 
 app.listen(port, host, () => {
