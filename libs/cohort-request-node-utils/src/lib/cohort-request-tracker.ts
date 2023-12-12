@@ -223,14 +223,14 @@ export class CohortRequestTracker {
       (response) => {
         const events: Event[] = response[0];
         const jobs: Job[] = response[1];
-
-        const statusMap = getRequestStatusFromEvents(events);
         const eventsByJobId = groupEventsByJobId(events);
 
         return jobs.map((job) => ({
           ...job,
           events: eventsByJobId[job.jobId],
-          status: statusMap[job.jobId],
+          status:
+            this.getRequestStatus(job.jobId) ||
+            getRequestStatusFromEvents(events)[job.jobId],
         }));
       }
     );
@@ -243,7 +243,9 @@ export class CohortRequestTracker {
     ]).then((response) => {
       const events: Event[] = response[0];
       const job: Job | undefined = response[1];
-      const status = getRequestStatusFromEvents(events)[jobId];
+      const status =
+        this.getRequestStatus(jobId) ||
+        getRequestStatusFromEvents(events)[jobId];
 
       return {
         ...job,

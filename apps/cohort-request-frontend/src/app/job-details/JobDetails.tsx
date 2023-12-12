@@ -85,7 +85,10 @@ export function JobDetails(props: JobDetailsProps) {
         </Col>
       </Row>
 
-      <DetailsRow title={<strong>Status:</strong>} value={job.status} />
+      <DetailsRow
+        title={<strong>Status:</strong>}
+        value={<StatusColumn value={job.status} />}
+      />
       <DetailsRow
         title={<strong>Requester ID:</strong>}
         value={job.requesterId}
