@@ -31,6 +31,7 @@ export function RequestTracker(props: RequestTrackerProps) {
 
   const colDefs = [
     { field: 'jobId', cellRenderer: JobIdColumn },
+    { field: 'status', cellRenderer: StatusColumn, filter: true },
     {
       field: 'requestTimestamp',
       valueFormatter: dateFormatter,
@@ -43,7 +44,6 @@ export function RequestTracker(props: RequestTrackerProps) {
     { field: 'users', valueFormatter: stringArrayFormatter, filter: true },
     { field: 'additionalData', cellRenderer: AdditionalDataColumn },
     { field: 'events', cellRenderer: EventColumn },
-    { field: 'status', cellRenderer: StatusColumn, filter: true },
   ];
 
   return (

@@ -44,12 +44,12 @@ export function EventDetails(props: EventDetailsProps) {
         </Col>
       </Row>
       <DetailsRow
-        title={<strong>Event Date:</strong>}
-        value={dateFormatter({ value: event.timestamp })}
-      />
-      <DetailsRow
         title={<strong>Status:</strong>}
         value={<StatusColumn value={event.status} />}
+      />
+      <DetailsRow
+        title={<strong>Event Date:</strong>}
+        value={dateFormatter({ value: event.timestamp })}
       />
       <DetailsRow title={<strong>Job ID:</strong>} value={event.jobId} />
       <DetailsRow
