@@ -49,7 +49,7 @@ export function StatusColumn(props: { value: CohortRequestStatus }) {
 }
 
 export function JobIdColumn(props: { value: string }) {
-  return <Link to={`/job/${props.value}`}>{props.value}</Link>;
+  return <Link to={`/job/${props.value}`}>{props.value.substring(0, 7)}</Link>;
 }
 
 export function EventDateColumn(props: { value: number; data: Event }) {
@@ -94,13 +94,7 @@ export function AdditionalDataColumn(props: {
     size: number;
   }[];
 }) {
-  return (
-    <span>
-      {props.value
-        ?.map((d) => `${d.filename} (${filesize(d.size)})`)
-        .join(', ')}
-    </span>
-  );
+  return <span>{additionalDataFormatter(props)}</span>;
 }
 
 export function dateFormatter(props: { value: number }) {
@@ -110,3 +104,26 @@ export function dateFormatter(props: { value: number }) {
 export function stringArrayFormatter(props: { value?: string[] }) {
   return props.value?.join(', ') || '';
 }
+
+export function additionalDataFormatter(props: {
+  value?: {
+    filename: string;
+    size: number;
+  }[];
+}) {
+  return props.value
+    ?.map((d) => `${d.filename} (${filesize(d.size)})`)
+    .join(', ');
+}
+
+export const DefaultColumnDefinition = {
+  Status: { field: 'status', cellRenderer: StatusColumn, filter: true },
+  RequesterId: { field: 'requesterId', filter: true },
+  RequesterName: { field: 'requesterName', filter: true },
+  Users: { field: 'users', valueFormatter: stringArrayFormatter, filter: true },
+  AdditionalData: {
+    field: 'additionalData',
+    valueFormatter: additionalDataFormatter,
+    cellRenderer: AdditionalDataColumn,
+  },
+};

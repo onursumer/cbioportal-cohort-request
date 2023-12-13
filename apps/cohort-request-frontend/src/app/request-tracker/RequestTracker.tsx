@@ -8,12 +8,11 @@ import {
   fetchJobsDetailed,
 } from '@cbioportal-cohort-request/cohort-request-utils';
 import {
-  AdditionalDataColumn,
   dateFormatter,
+  DefaultColumnDefinition,
   defaultGridProps,
   EventColumn,
   JobIdColumn,
-  StatusColumn,
   stringArrayFormatter,
 } from '../table-formatter/table-formatter';
 
@@ -31,18 +30,18 @@ export function RequestTracker(props: RequestTrackerProps) {
 
   const colDefs = [
     { field: 'jobId', cellRenderer: JobIdColumn },
-    { field: 'status', cellRenderer: StatusColumn, filter: true },
+    DefaultColumnDefinition.Status,
     {
       field: 'requestTimestamp',
       valueFormatter: dateFormatter,
       headerName: 'Request Date',
     },
-    { field: 'requesterId', filter: true },
-    { field: 'requesterName', filter: true },
+    DefaultColumnDefinition.RequesterId,
+    DefaultColumnDefinition.RequesterName,
     { field: 'studyIds', valueFormatter: stringArrayFormatter, filter: true },
     { field: 'caseIds', valueFormatter: stringArrayFormatter, filter: true },
-    { field: 'users', valueFormatter: stringArrayFormatter, filter: true },
-    { field: 'additionalData', cellRenderer: AdditionalDataColumn },
+    DefaultColumnDefinition.Users,
+    DefaultColumnDefinition.AdditionalData,
     { field: 'events', cellRenderer: EventColumn },
   ];
 
