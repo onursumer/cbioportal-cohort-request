@@ -10,7 +10,7 @@ import {
   getEventPrimaryKey,
 } from '@cbioportal-cohort-request/cohort-request-utils';
 import { requestCohort } from './app/request-cohort';
-import { chain, flatten, isEmpty } from 'lodash';
+import { chain, isEmpty } from 'lodash';
 import { config } from 'dotenv';
 
 // config dotenv before everything else to mae sure process.env is populated from .env file
@@ -56,38 +56,41 @@ app.post(`${API_ROOT}/cohort-request`, async (req, res) => {
   res.send(response);
 });
 
-app.get(`${API_ROOT}/event`, async (req, res, next) => {
+app.get(`${API_ROOT}/event`, async (req, res) => {
   const jobId = req.query['jobId'] as string;
   const eventId = req.query['eventId'] as string;
   const response: Event[] = [];
 
   if (isEmpty(jobId) && isEmpty(eventId)) {
     response.push(...(await requestTracker.fetchAllEvents()));
-  } else {
-    if (!isEmpty(jobId)) {
-      response.push(...(await requestTracker.fetchEventsByJobId(jobId)));
+  } else if (!isEmpty(eventId)) {
+    const event = await requestTracker
+      .fetchEventById(eventId)
+      .catch(() => undefined);
+    // if job id also provided make sure event.jobId matches given jobId
+    if (!jobId || event?.jobId === jobId) {
+      response.push(event);
     }
-    if (!isEmpty(eventId)) {
-      response.push(await requestTracker.fetchEventById(eventId));
-    }
+  } else if (!isEmpty(jobId)) {
+    response.push(...(await requestTracker.fetchEventsByJobId(jobId)));
   }
 
   res.send(chain(response).compact().uniqBy(getEventPrimaryKey).value());
 });
 
-app.get(`${API_ROOT}/job`, async (req, res, next) => {
+app.get(`${API_ROOT}/job`, async (req, res) => {
   const jobId = req.query['jobId'] as string;
   const response = isEmpty(jobId)
     ? await requestTracker.fetchAllJobs()
-    : await requestTracker.fetchJobById(jobId);
-  res.send(flatten([response]));
+    : await requestTracker.fetchJobById(jobId).catch(() => undefined);
+  res.send(chain([response]).flatten().compact().value());
 });
 
-app.get(`${API_ROOT}/job-detailed`, async (req, res, next) => {
+app.get(`${API_ROOT}/job-detailed`, async (req, res) => {
   const jobId = req.query['jobId'] as string;
   const response = isEmpty(jobId)
     ? await requestTracker.fetchAllJobsDetailed()
-    : await requestTracker.fetchJobDetailedById(jobId);
+    : await requestTracker.fetchJobDetailedById(jobId).catch(() => undefined);
   res.send(chain([response]).flatten().compact().value());
 });
 
