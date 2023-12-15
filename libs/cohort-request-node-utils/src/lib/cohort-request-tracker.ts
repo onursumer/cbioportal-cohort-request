@@ -1,58 +1,41 @@
-import { Level } from 'level';
-import { chain, Dictionary, maxBy } from 'lodash';
+import { Dictionary } from 'lodash';
 import {
   CohortRequest,
   CohortRequestStatus,
+  EnhancedJob,
   Event,
+  getRequestStatusFromEvents,
+  groupEventsByJobId,
   Job,
   QueueItem,
 } from '@cbioportal-cohort-request/cohort-request-utils';
 import { persistFiles } from './cohort-request-process';
 import { ExecResult } from './execute-command';
-
-type JobDB = Level<string, Job>;
-type EventDB = Level<number, Event>;
+import {
+  EventDB,
+  fetchAllEvents,
+  fetchEventById,
+  fetchEventsByJobId,
+  initEventDB,
+  insertEvent,
+} from './event-repository';
+import {
+  fetchAllJobs,
+  fetchJobById,
+  initJobDB,
+  insertJob,
+  JobDB,
+} from './job-repository';
 
 export async function initRequestStatus(eventDB: EventDB) {
-  const events = await fetchAllRecords(eventDB);
-  return (
-    chain(events)
-      .groupBy((d) => d.jobId)
-      .map((value) => maxBy(value, (v) => v.eventDate))
-      // ignore duplicate events
-      .filter((event) => event.status !== CohortRequestStatus.Duplicate)
-      .map((event) => ({
-        ...event,
-        // if no 'Complete' event logged for a certain job, then assume that it has failed
-        status:
-          event.status === CohortRequestStatus.Complete
-            ? CohortRequestStatus.Complete
-            : CohortRequestStatus.Error,
-      }))
-      .keyBy((d) => d.jobId)
-      .transform((result, value, key) => {
-        result[key] = value.status;
-      }, {})
-      .value()
-  );
-}
-
-function fetchAllRecords<K, V>(db?: Level<K, V>) {
-  return db?.values().all() || Promise.resolve([]);
-}
-
-function initJobDB(location = 'leveldb/jobs'): JobDB {
-  return new Level<string, Job>(location, { valueEncoding: 'json' });
-}
-
-function initEventDB(location = 'leveldb/events'): EventDB {
-  return new Level<number, Event>(location, { valueEncoding: 'json' });
+  const events = await fetchAllEvents(eventDB);
+  return getRequestStatusFromEvents(events);
 }
 
 function updateJob(item: QueueItem<ExecResult>, jobDB: JobDB) {
-  jobDB
-    .put(item.uniqueId, initJob(item))
-    .catch((error) => console.log(JSON.stringify(error)));
+  insertJob(initJob(item), jobDB).catch((error) =>
+    console.log(JSON.stringify(error))
+  );
 }
 
 export type JobCompleteHandler = (
@@ -108,7 +91,7 @@ export function defaultJobErrorHandler(
 function initJob(item: QueueItem<ExecResult>): Job {
   return {
     jobId: item.uniqueId,
-    requestDate: item.date,
+    requestTimestamp: item.timestamp,
     requesterId: item.request.id,
     requesterName: item.request.name,
     studyIds: item.request.studyIds,
@@ -128,46 +111,52 @@ function getAdditionalDataSummary(request: CohortRequest) {
 function logEvent(
   item: QueueItem<ExecResult>,
   status: CohortRequestStatus,
+  result?: ExecResult,
   eventDB?: EventDB
 ) {
-  let event: Event = {
-    jobId: item.uniqueId,
+  const { jobId, requesterId, requesterName, users, additionalData } =
+    initJob(item);
+  const event: Event = {
+    jobId,
     status,
-    eventDate: new Date(),
+    timestamp: Date.now(),
+    output: result?.output,
+    // for duplicate requests or multiple retries for the same unique job id,
+    // log additional info since we may have different data for different requests
+    requesterId,
+    requesterName,
+    users,
+    additionalData,
   };
 
-  // for duplicate request for the same unique job id,
-  // log additional info since we only keep one job object per key
-  if (status === CohortRequestStatus.Duplicate) {
-    const { requesterId, requesterName, users, additionalData } = initJob(item);
-
-    event = {
-      ...event,
-      requesterId,
-      requesterName,
-      users,
-      additionalData,
-    };
-  }
-
-  eventDB
-    ?.put(Date.parse(event.eventDate.toString()), event)
-    .catch((error) => console.log(JSON.stringify(error)));
+  insertEvent(event, eventDB).catch((error) =>
+    console.log(JSON.stringify(error))
+  );
 }
 
 export function updateJobStatus(
   item: QueueItem<ExecResult>,
   status: CohortRequestStatus,
+  result?: ExecResult,
   jobDB?: JobDB,
   eventDB?: EventDB
 ) {
-  jobDB?.get(item.uniqueId).catch((error) => {
-    if (error.code === 'LEVEL_NOT_FOUND') {
-      updateJob(item, jobDB);
-    }
-  });
+  fetchJobById(item.uniqueId, jobDB)
+    .then((job: Job | undefined) => {
+      // job already exits in the DB, but there might be previous errors
+      // so every time we had to rerun the job we should also overwrite it with the latest data provided by the user
+      if (job && status === CohortRequestStatus.Pending) {
+        updateJob(item, jobDB);
+      }
+    })
+    .catch((error) => {
+      if (error.code === 'LEVEL_NOT_FOUND') {
+        // this is the first time we are adding the job to the DB
+        updateJob(item, jobDB);
+      }
+    });
 
-  logEvent(item, status, eventDB);
+  logEvent(item, status, result, eventDB);
 }
 
 export class CohortRequestTracker {
@@ -193,9 +182,10 @@ export class CohortRequestTracker {
 
   public updateJobStatus(
     item: QueueItem<ExecResult>,
-    status: CohortRequestStatus
+    status: CohortRequestStatus,
+    result?: ExecResult
   ) {
-    updateJobStatus(item, status, this.jobDB, this.eventDB);
+    updateJobStatus(item, status, result, this.jobDB, this.eventDB);
   }
 
   public getRequestStatus(id: string) {
@@ -208,11 +198,60 @@ export class CohortRequestTracker {
     }
   }
 
-  public fetchAllEvents() {
-    return fetchAllRecords(this.eventDB);
+  public fetchAllEvents(): Promise<Event[]> {
+    return fetchAllEvents(this.eventDB);
   }
 
-  public fetchAllJobs() {
-    return fetchAllRecords(this.jobDB);
+  public fetchEventsByJobId(jobId: string): Promise<Event[]> {
+    return fetchEventsByJobId(jobId, this.eventDB);
+  }
+
+  public fetchEventById(eventId: string): Promise<Event | undefined> {
+    return fetchEventById(eventId, this.eventDB);
+  }
+
+  public fetchAllJobs(): Promise<Job[]> {
+    return fetchAllJobs(this.jobDB);
+  }
+
+  public fetchJobById(jobId: string): Promise<Job | undefined> {
+    return fetchJobById(jobId, this.jobDB);
+  }
+
+  public fetchAllJobsDetailed(): Promise<EnhancedJob[]> {
+    return Promise.all([this.fetchAllEvents(), this.fetchAllJobs()]).then(
+      (response) => {
+        const events: Event[] = response[0];
+        const jobs: Job[] = response[1];
+        const eventsByJobId = groupEventsByJobId(events);
+
+        return jobs.map((job) => ({
+          ...job,
+          events: eventsByJobId[job.jobId],
+          status:
+            this.getRequestStatus(job.jobId) ||
+            getRequestStatusFromEvents(events)[job.jobId],
+        }));
+      }
+    );
+  }
+
+  public fetchJobDetailedById(jobId: string): Promise<EnhancedJob | undefined> {
+    return Promise.all([
+      this.fetchEventsByJobId(jobId),
+      this.fetchJobById(jobId),
+    ]).then((response) => {
+      const events: Event[] = response[0];
+      const job: Job | undefined = response[1];
+      const status =
+        this.getRequestStatus(jobId) ||
+        getRequestStatusFromEvents(events)[jobId];
+
+      return {
+        ...job,
+        events,
+        status,
+      };
+    });
   }
 }

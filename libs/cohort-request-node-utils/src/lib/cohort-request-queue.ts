@@ -1,6 +1,7 @@
 import {
   CohortRequest,
   CohortRequestStatus,
+  ExecOutput,
   QueueItem,
 } from '@cbioportal-cohort-request/cohort-request-utils';
 import {
@@ -14,7 +15,12 @@ import {
   JobCompleteHandler,
   JobErrorHandler,
 } from './cohort-request-tracker';
-import { ExecResult, executeCommand } from './execute-command';
+import {
+  ExecResult,
+  executeCommand,
+  getFinalExecResult,
+} from './execute-command';
+import { isString } from 'lodash';
 
 enum DequeueResult {
   Pending = 'Pending',
@@ -52,10 +58,10 @@ export class CohortRequestQueue {
     const command = requestToCommand(request, this.shellScriptPath);
     const uniqueId = requestToUniqueId(request);
     const status = this.getItemStatus(uniqueId);
-    const date = new Date();
+    const timestamp = Date.now();
 
     const item: QueueItem<ExecResult> = {
-      date,
+      timestamp,
       uniqueId,
       command,
       request,
@@ -79,7 +85,7 @@ export class CohortRequestQueue {
       };
       return Promise.resolve({
         uniqueId,
-        date,
+        timestamp,
         status,
         output,
         execPromise: Promise.resolve(output),
@@ -99,7 +105,7 @@ export class CohortRequestQueue {
           stdout: 'Request has been queued.',
         };
         resolve({
-          date,
+          timestamp,
           uniqueId,
           status: CohortRequestStatus.Queued,
           output,
@@ -119,7 +125,11 @@ export class CohortRequestQueue {
     }
     const onError = (err: ExecResult | string) => {
       this.workingOnPromise = false;
-      this.setItemStatus(item, CohortRequestStatus.Error);
+      this.setItemStatus(
+        item,
+        CohortRequestStatus.Error,
+        isString(err) ? undefined : (err as ExecResult)
+      );
       item.reject(err);
       if (this.onJobError) {
         this.onJobError(item, this.getItemStatus(item.uniqueId), err);
@@ -134,14 +144,20 @@ export class CohortRequestQueue {
         item.command,
         this.shellScriptPath,
         item.uniqueId,
-        item.date,
+        item.timestamp,
         this.timeout
       )
         .then((value) => {
           value.execPromise
-            .then(() => {
+            .then((output: ExecOutput) => {
               this.workingOnPromise = false;
-              this.setItemStatus(item, CohortRequestStatus.Complete);
+              const result = getFinalExecResult(
+                value.uniqueId,
+                value.execPromise,
+                output
+              );
+              // we should only get here if output.code === 0, so assume status complete
+              this.setItemStatus(item, CohortRequestStatus.Complete, result);
               if (this.onJobComplete) {
                 this.onJobComplete(
                   item,
@@ -152,7 +168,11 @@ export class CohortRequestQueue {
               }
               this.dequeue();
             })
-            .catch(onError);
+            .catch((output: ExecOutput) => {
+              onError(
+                getFinalExecResult(value.uniqueId, value.execPromise, output)
+              );
+            });
           item.resolve(value);
         })
         .catch(onError);
@@ -172,9 +192,10 @@ export class CohortRequestQueue {
 
   public setItemStatus(
     item: QueueItem<ExecResult>,
-    status: CohortRequestStatus
+    status: CohortRequestStatus,
+    result?: ExecResult
   ): void {
     this.requestTracker.setRequestStatus(item.uniqueId, status);
-    this.requestTracker.updateJobStatus(item, status);
+    this.requestTracker.updateJobStatus(item, status, result);
   }
 }

@@ -7,7 +7,7 @@ describe('executeCommand', () => {
       "echo 'executeCommand(): Hello World!'",
       '.',
       '1',
-      new Date(),
+      Date.now(),
       500
     );
 
@@ -21,7 +21,7 @@ describe('executeCommand', () => {
       "sleep 1; echo 'executeCommand(): Goodbye World!';",
       '.',
       '2',
-      new Date(),
+      Date.now(),
       500
     );
 

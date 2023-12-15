@@ -20,14 +20,20 @@ export enum CohortRequestStatus {
 
 export interface CohortRequestResponse {
   uniqueId: string;
-  date: Date;
+  timestamp: number;
   status: CohortRequestStatus;
   message: string;
 }
 
+export interface ExecOutput {
+  code: number;
+  stdout: string;
+  stderr: string;
+}
+
 export interface Job {
   jobId: string;
-  requestDate: Date;
+  requestTimestamp: number;
   requesterId: string;
   requesterName: string;
   studyIds: string[];
@@ -41,7 +47,7 @@ export interface Job {
 
 export interface Event {
   jobId: string;
-  eventDate: Date;
+  timestamp: number;
   status: CohortRequestStatus;
   requesterId?: string;
   requesterName?: string;
@@ -50,11 +56,17 @@ export interface Event {
     filename: string;
     size: number;
   }[];
+  output?: ExecOutput;
+}
+
+export interface EnhancedJob extends Job {
+  events: Event[];
+  status: CohortRequestStatus;
 }
 
 export interface QueueItem<T> {
   uniqueId: string;
-  date: Date;
+  timestamp: number;
   command: string;
   request: CohortRequest;
   resolve: (value: T) => void;

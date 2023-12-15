@@ -1,18 +1,15 @@
-import { CohortRequestStatus } from '@cbioportal-cohort-request/cohort-request-utils';
+import {
+  CohortRequestStatus,
+  ExecOutput,
+} from '@cbioportal-cohort-request/cohort-request-utils';
 import { cd, exec, pwd } from 'shelljs';
 import * as path from 'path';
 
-const SYNC_EXECUTION_THRESHOLD_MS = 500;
-
-export interface ExecOutput {
-  code: number;
-  stdout: string;
-  stderr: string;
-}
+export const SYNC_EXECUTION_THRESHOLD_MS = 500;
 
 export interface ExecResult {
   uniqueId: string;
-  date: Date;
+  timestamp: number;
   status: CohortRequestStatus;
   execPromise: Promise<ExecOutput>;
   output?: ExecOutput;
@@ -25,7 +22,7 @@ export interface ExecResult {
  *
  * @param command command to execute
  * @param shellScriptPath path to the external script
- * @param date optional execution date
+ * @param timestamp optional execution date
  * @param uniqueId optional unique id for execution
  * @param timeout waits up to <timeout> ms before returning Pending status
  */
@@ -33,7 +30,7 @@ export async function executeCommand(
   command: string,
   shellScriptPath: string,
   uniqueId?: string,
-  date: Date = new Date(),
+  timestamp: number = Date.now(),
   timeout: number = SYNC_EXECUTION_THRESHOLD_MS
 ): Promise<ExecResult> {
   let status = CohortRequestStatus.Pending;
@@ -48,12 +45,12 @@ export async function executeCommand(
 
   execPromise
     // update status when done
-    .then((data) => {
+    .then((data: ExecOutput) => {
       status = CohortRequestStatus.Complete;
       output = data;
     })
     // update status in case of an error
-    .catch((data) => {
+    .catch((data: ExecOutput) => {
       status = CohortRequestStatus.Error;
       output = data;
     })
@@ -65,7 +62,7 @@ export async function executeCommand(
     () => (status = CohortRequestStatus.Error)
   );
 
-  return { status, uniqueId, date, output, execPromise };
+  return { status, uniqueId, timestamp, output, execPromise };
 }
 
 export function execAsync(
@@ -83,4 +80,22 @@ export function execAsync(
 
 export function delay(timeInMilliseconds: number) {
   return new Promise((resolve) => setTimeout(resolve, timeInMilliseconds));
+}
+
+export function getFinalExecResult(
+  uniqueId: string,
+  execPromise: Promise<ExecOutput>,
+  output: ExecOutput
+): ExecResult {
+  return {
+    timestamp: Date.now(),
+    // treat exit code 0 as complete, non-zero as error
+    status:
+      output.code === 0
+        ? CohortRequestStatus.Complete
+        : CohortRequestStatus.Error,
+    uniqueId,
+    execPromise,
+    output,
+  };
 }

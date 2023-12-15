@@ -13,7 +13,7 @@ export function getCaseIdsSorted(request: CohortRequest) {
 export function generateTempSubsetIdFilename(request: CohortRequest) {
   // TODO creating a system file using user input is not safe,
   //  make sure request.id is strictly numeric
-  return `/tmp/subset_ids_${request.id}_${new Date().getTime()}.txt`;
+  return `/tmp/subset_ids_${request.id}_${Date.now()}.txt`;
 }
 
 export function defaultRequestToCommand(
