@@ -8,6 +8,7 @@ export interface CohortRequest {
     content: string;
     filename: string;
   }[];
+  timestamp?: number;
 }
 
 export enum CohortRequestStatus {

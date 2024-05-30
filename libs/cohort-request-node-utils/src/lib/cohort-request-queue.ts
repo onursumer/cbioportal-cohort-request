@@ -58,7 +58,7 @@ export class CohortRequestQueue {
     const command = requestToCommand(request, this.shellScriptPath);
     const uniqueId = requestToUniqueId(request);
     const status = this.getItemStatus(uniqueId);
-    const timestamp = Date.now();
+    const timestamp = request.timestamp || Date.now();
 
     const item: QueueItem<ExecResult> = {
       timestamp,

@@ -17,6 +17,9 @@ export async function requestCohort(
   shellScriptPath: string,
   requestQueue?: CohortRequestQueue
 ): Promise<CohortRequestResponse> {
+  // set/override the request timestamp on the server side to keep things safe & consistent
+  request.timestamp = Date.now();
+
   writeCasesToTempFile(request);
   // use the queue if provided to execute the command
   const { status, output, uniqueId, timestamp } = requestQueue
@@ -24,7 +27,8 @@ export async function requestCohort(
     : await executeCommand(
         defaultRequestToCommand(request, shellScriptPath),
         shellScriptPath,
-        defaultRequestToUniqueId(request)
+        defaultRequestToUniqueId(request),
+        request.timestamp
       );
 
   return {
