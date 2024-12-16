@@ -69,11 +69,10 @@ export class CohortRequestQueue {
       reject: () => undefined,
     };
 
-    // do not enqueue duplicate queries, just return status if it is already Queued, Pending, or Complete
+    // do not enqueue duplicate queries, just return status if it is already Queued or Pending
     if (
       status === CohortRequestStatus.Queued ||
-      status === CohortRequestStatus.Pending ||
-      status === CohortRequestStatus.Complete
+      status === CohortRequestStatus.Pending
     ) {
       this.requestTracker.updateJobStatus(item, CohortRequestStatus.Duplicate);
       // add an output to indicate this is a duplicate request
