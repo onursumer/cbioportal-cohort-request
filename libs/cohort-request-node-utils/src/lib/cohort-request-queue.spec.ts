@@ -126,7 +126,7 @@ describe('CohortRequestQueue', () => {
     // try executing again with same hash
     const execution7dupResult = await enqueue(
       queue,
-      "echo 'enqueue(): execution 7 dup - should not execute because already completed'",
+      "sleep 0.3; echo 'enqueue(): execution 7 dup - should execute even if already complete - 300 ms delay'",
       '7'
     );
 
@@ -136,10 +136,18 @@ describe('CohortRequestQueue', () => {
       '8'
     );
 
-    expect(execution7dupResult.status).toBe(CohortRequestStatus.Complete);
-    expect(execution8dup2Result.status).toBe(CohortRequestStatus.Complete);
+    // result should be Pending for 7dup and Queued for 8dup2
+    expect(execution7dupResult.status).toBe(CohortRequestStatus.Pending);
+    expect(execution8dup2Result.status).toBe(CohortRequestStatus.Queued);
 
     // initial status should be same as the execution result status
+    expect(queue.getItemStatus('7')).toBe(CohortRequestStatus.Pending);
+    expect(queue.getItemStatus('8')).toBe(CohortRequestStatus.Queued);
+
+    // wait enough for the queue to clear
+    await delay(350); // 350 > 300
+
+    // final status should be Complete for both
     expect(queue.getItemStatus('7')).toBe(CohortRequestStatus.Complete);
     expect(queue.getItemStatus('8')).toBe(CohortRequestStatus.Complete);
   });
