@@ -29,6 +29,7 @@ function EventTable(props: { events?: Event[] }) {
       valueFormatter: dateFormatter,
       headerName: 'Event Date',
       cellRenderer: EventDateColumn,
+      sort: 'desc',
     },
     DefaultColumnDefinition.Status,
     DefaultColumnDefinition.RequesterId,
