@@ -35,6 +35,7 @@ export function RequestTracker(props: RequestTrackerProps) {
       field: 'requestTimestamp',
       valueFormatter: dateFormatter,
       headerName: 'Request Date',
+      sort: 'desc',
     },
     DefaultColumnDefinition.RequesterId,
     DefaultColumnDefinition.RequesterName,
