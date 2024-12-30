@@ -74,11 +74,11 @@ export function EventDetails(props: EventDetailsProps) {
       />
       <DetailsRow
         title={<strong>stdout:</strong>}
-        value={event.output?.stdout}
+        value={<span className={styles.stdout}>{event.output?.stdout}</span>}
       />
       <DetailsRow
         title={<strong>stderr:</strong>}
-        value={event.output?.stderr}
+        value={<span className={styles.stdout}>{event.output?.stderr}</span>}
       />
     </Container>
   ) : null;
