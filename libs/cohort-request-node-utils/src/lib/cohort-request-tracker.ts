@@ -218,6 +218,40 @@ export class CohortRequestTracker {
     return fetchJobById(jobId, this.jobDB);
   }
 
+  public terminateJobById(jobId: string): Promise<Job | undefined> {
+    return this.fetchJobById(jobId).then((job) => {
+      // if already terminated just return the job
+      if (job.terminationTimestamp) {
+        return job;
+      }
+      // if not terminated yet, terminate the job and update the DB
+      job.terminationTimestamp = Date.now();
+      return insertJob(job, this.jobDB)
+        .then(() => job)
+        .catch((error) => {
+          console.log(JSON.stringify(error));
+          return undefined;
+        });
+    });
+  }
+
+  public recoverJobById(jobId: string): Promise<Job | undefined> {
+    return this.fetchJobById(jobId).then((job) => {
+      // if not terminated yet just return the job
+      if (!job.terminationTimestamp) {
+        return job;
+      }
+      // remove termination stamp so that the job can be recovered
+      job.terminationTimestamp = undefined;
+      return insertJob(job, this.jobDB)
+        .then(() => job)
+        .catch((error) => {
+          console.log(JSON.stringify(error));
+          return undefined;
+        });
+    });
+  }
+
   public fetchAllJobsDetailed(): Promise<EnhancedJob[]> {
     return Promise.all([this.fetchAllEvents(), this.fetchAllJobs()]).then(
       (response) => {

@@ -94,6 +94,22 @@ app.get(`${API_ROOT}/job-detailed`, async (req, res) => {
   res.send(chain([response]).flatten().compact().value());
 });
 
+app.get(`${API_ROOT}/terminate-job`, async (req, res) => {
+  const jobId = req.query['jobId'] as string;
+  const response = isEmpty(jobId)
+    ? undefined
+    : await requestTracker.terminateJobById(jobId).catch(() => undefined);
+  res.send(chain([response]).flatten().compact().value());
+});
+
+app.get(`${API_ROOT}/recover-job`, async (req, res) => {
+  const jobId = req.query['jobId'] as string;
+  const response = isEmpty(jobId)
+    ? undefined
+    : await requestTracker.recoverJobById(jobId).catch(() => undefined);
+  res.send(chain([response]).flatten().compact().value());
+});
+
 app.listen(port, host, () => {
   console.log(`[ ready ] http://${host}:${port}`);
 });

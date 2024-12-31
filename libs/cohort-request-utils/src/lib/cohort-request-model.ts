@@ -44,6 +44,7 @@ export interface Job {
     filename: string;
     size: number;
   }[];
+  terminationTimestamp?: number;
 }
 
 export interface Event {

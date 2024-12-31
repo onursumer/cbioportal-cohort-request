@@ -31,3 +31,15 @@ export async function fetchJobsDetailed(
 ): Promise<AxiosResponse<EnhancedJob[]>> {
   return axios.get('/api/job-detailed', { params });
 }
+
+export async function terminateJob(
+  params?: Dictionary<string>
+): Promise<AxiosResponse<EnhancedJob[]>> {
+  return axios.get('/api/terminate-job', { params });
+}
+
+export async function recoverJob(
+  params?: Dictionary<string>
+): Promise<AxiosResponse<EnhancedJob[]>> {
+  return axios.get('/api/recover-job', { params });
+}
