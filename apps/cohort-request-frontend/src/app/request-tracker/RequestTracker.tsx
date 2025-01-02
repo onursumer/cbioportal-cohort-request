@@ -4,10 +4,11 @@ import { useSearchParams } from 'react-router-dom';
 import { AgGridReact } from 'ag-grid-react';
 import 'ag-grid-community/styles/ag-grid.css'; // Core CSS
 import 'ag-grid-community/styles/ag-theme-quartz.css'; // Theme
-import { faTrashCan } from '@fortawesome/free-solid-svg-icons';
+import { faTrashCan, faUndo } from '@fortawesome/free-solid-svg-icons';
 import {
   EnhancedJob,
   fetchJobsDetailed,
+  recoverJob,
   terminateJob,
 } from '@cbioportal-cohort-request/cohort-request-utils';
 import IconWithTooltip from '../icon-with-tooltip/IconWithTooltip';
@@ -43,27 +44,40 @@ export function RequestTracker(props: RequestTrackerProps) {
   const [rowData, setRowData] = useState<EnhancedJob[]>([]);
 
   const DeleteJob = (props: { value?: number; data?: EnhancedJob }) => {
+    const isTerminated = !!props?.data?.terminationTimestamp;
+    const jobId = props?.data?.jobId;
+    const jobIdShort = jobId?.substring(0, 7);
+
     const handleDelete = () => {
-      if (props?.data?.jobId) {
-        terminateJob({ jobId: props?.data?.jobId }).then((result) => {
+      if (jobId) {
+        // TODO prompt "Are you sure?" before deleting
+        const params = { jobId };
+        const promise = isTerminated
+          ? recoverJob(params)
+          : terminateJob(params);
+        promise.then((result) => {
           if (result.data.length > 0) {
-            // fetch jobs again to refresh the table (to remove deleted jobs)
+            // fetch jobs again to refresh the table (to remove/restore jobs)
             fetchJobsDetailed().then(handleJobFetch);
           }
         });
       }
     };
 
-    // TODO prompt "Are you sure?" before deleting
     return (
       <Button
-        disabled={!!props?.data?.terminationTimestamp}
-        variant="danger"
+        variant={isTerminated ? 'primary' : 'danger'}
         onClick={handleDelete}
       >
         <IconWithTooltip
-          icon={faTrashCan}
-          tooltipContent={<>Delete Job {props?.data?.jobId.substring(0, 7)}</>}
+          icon={isTerminated ? faUndo : faTrashCan}
+          tooltipContent={
+            isTerminated ? (
+              <>Restore Job ${jobIdShort}</>
+            ) : (
+              <>Delete Job ${jobIdShort}</>
+            )
+          }
         />
       </Button>
     );
